@@ -18,12 +18,15 @@ export const createInitialAFPFormData = (): AFPFormData => ({
     paralysisCausedByInjury: null,
     paralysisPresentAtBirth: null,
   },
+
   screeningDiagnosis: "",
 });
 
 interface AFPFormContextValue {
   data: AFPFormData;
+
   updateData: (updater: AFPFormUpdater) => void;
+
   readOnly: boolean;
 }
 
@@ -48,27 +51,34 @@ export function AFPFormProvider({
 
   const isControlled = value !== undefined;
 
-  const data = isControlled ? value : internalData;
+  const data = value ?? internalData;
 
   const updateData = useCallback(
     (updater: AFPFormUpdater) => {
-      if (readOnly) return;
+      if (readOnly) {
+        return;
+      }
 
       if (isControlled) {
         const nextData = updater(data);
+
         onChange?.(nextData);
-      } else {
-        setInternalData((previous) => {
-          const nextData = updater(previous);
-          onChange?.(nextData);
-          return nextData;
-        });
+
+        return;
       }
+
+      setInternalData((previous) => {
+        const nextData = updater(previous);
+
+        onChange?.(nextData);
+
+        return nextData;
+      });
     },
     [data, isControlled, onChange, readOnly],
   );
 
-  const contextValue = useMemo(
+  const contextValue = useMemo<AFPFormContextValue>(
     () => ({
       data,
       updateData,

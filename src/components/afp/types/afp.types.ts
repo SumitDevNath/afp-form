@@ -15,6 +15,10 @@ export interface AFPClinicalInformation {
 
 export interface AFPFormData {
   clinicalInformation: AFPClinicalInformation;
+
+  /**
+   * Used only when the AFP screening status is "not_eligible".
+   */
   screeningDiagnosis: string;
 }
 

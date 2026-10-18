@@ -1,37 +1,47 @@
-import { Box, Typography } from "@mui/material";
+import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
 
-import { AFPFormProvider } from "./context/AFPFormContext";
+import ClinicalInformationSection from "./sections/ClinicalInformationSection";
 
 import type { AFPInvestigationFormProps } from "./types/afp.types";
 
-function AFPFormContent() {
-  return (
-    <Box
-      component="section"
-      className="rounded-xl border border-[#d9e5f2] bg-white p-4 sm:p-6"
-    >
-      <Typography
-        component="h2"
-        sx={{
-          color: "#173b69",
-          fontSize: "1.125rem",
-          fontWeight: 700,
-        }}
-      >
-        AFP Case Investigation Form
-      </Typography>
+import { getAFPScreeningStatus } from "./utils/afpScreening.utils";
 
-      <Typography
-        sx={{
-          mt: 1,
-          color: "#64748b",
-          fontSize: "0.875rem",
-        }}
-      >
-        Form foundation initialized. Clinical Information will be implemented in
-        Phase 2.
-      </Typography>
-    </Box>
+function AFPFormContent() {
+  const { data } = useAFPForm();
+
+  const screeningStatus = getAFPScreeningStatus(data.clinicalInformation);
+
+  return (
+    <div className="space-y-4">
+      <ClinicalInformationSection />
+
+      {screeningStatus === "pending" && (
+        <div
+          className="
+            rounded-lg border
+            border-[#dbe5ef]
+            bg-white px-4 py-3
+            text-sm text-[#64748b]
+          "
+        >
+          Complete the AFP screening questions to continue the investigation.
+        </div>
+      )}
+
+      {screeningStatus === "eligible" && (
+        <div
+          className="
+            rounded-lg border
+            border-dashed border-[#cbd8e5]
+            bg-[#f8fbff] px-4 py-4
+            text-sm text-[#64748b]
+          "
+        >
+          AFP screening criteria are satisfied. Additional investigation
+          sections will appear here as they are implemented in the next phases.
+        </div>
+      )}
+    </div>
   );
 }
 
