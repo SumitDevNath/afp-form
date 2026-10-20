@@ -1,5 +1,4 @@
 import { TextField } from "@mui/material";
-
 import CheckboxField from "../fields/CheckboxField";
 import DateField from "../fields/DateField";
 import SelectField from "../fields/SelectField";
@@ -513,7 +512,7 @@ export default function SignsSymptomsSection({
                   text-[#52677e]
                 "
               >
-                If Yes, which?
+                Mention the health facility
               </label>
 
               <SelectField
@@ -558,15 +557,12 @@ export default function SignsSymptomsSection({
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         minHeight: 38,
-
                         borderRadius: "8px",
-
                         backgroundColor: "#ffffff",
                       },
 
                       "& input": {
                         py: "8px",
-
                         fontSize: "0.78rem",
                       },
                     }}

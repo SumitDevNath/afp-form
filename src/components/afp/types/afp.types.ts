@@ -75,29 +75,44 @@ export interface AFPVaccinationHistory {
   opvAfterParalysisDate: string;
 }
 
+export interface AFPTravelHistory {
+  /**
+   * This corresponds to the SVG control:
+   * "Travel outside area in last 30 days?"
+   *
+   * It controls whether the AFP travel
+   * details area is active.
+   */
+  travelOutsideAreaLast30Days: boolean;
+
+  /**
+   * AFP-specific field.
+   *
+   * The SVG displays this as a toggle.
+   */
+  notifiedToConcernedDsfpSimo: boolean;
+
+  /**
+   * Used only when
+   * notifiedToConcernedDsfpSimo = true.
+   */
+  notificationDate: string;
+}
+
 export interface AFPFormData {
   clinicalInformation: AFPClinicalInformation;
 
-  /**
-   * Used only when AFP screening status
-   * is "not_eligible".
-   */
   screeningDiagnosis: string;
 
   signsSymptoms: AFPSignsSymptoms;
 
   vaccinationHistory: AFPVaccinationHistory;
+
+  travelHistory: AFPTravelHistory;
 }
 
 export interface AFPFacilityOption {
-  /**
-   * Frontend option value only.
-   *
-   * This is not assumed to be a
-   * database ID.
-   */
   value: string;
-
   label: string;
 }
 

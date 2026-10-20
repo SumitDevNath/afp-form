@@ -1,6 +1,7 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
+import TravelHistorySection from "./sections/TravelHistorySection";
 import VaccinationHistorySection from "./sections/VaccinationHistorySection";
 
 import type {
@@ -16,7 +17,6 @@ interface AFPFormContentProps {
 
 function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
   const { data } = useAFPForm();
-
   const screeningStatus = getAFPScreeningStatus(data.clinicalInformation);
 
   return (
@@ -43,9 +43,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
       {screeningStatus === "eligible" && (
         <>
           <SignsSymptomsSection facilityOptions={facilityOptions} />
-
           <VaccinationHistorySection />
-
+          <TravelHistorySection />
           <div
             className="
               rounded-lg
@@ -59,8 +58,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
               text-[#64748b]
             "
           >
-            Further investigation sections will appear here as the remaining
-            phases are implemented.
+            Clinical Examination and the remaining investigation sections will
+            appear here in the next phases.
           </div>
         </>
       )}
