@@ -7,19 +7,58 @@ import {
   type ReactNode,
 } from "react";
 
-import type { AFPFormData, AFPFormUpdater } from "../types/afp.types";
+import type {
+  AFPFormData,
+  AFPFormUpdater,
+  AFPSignsSymptoms,
+} from "../types/afp.types";
+
+export const createInitialAFPSignsSymptoms = (): AFPSignsSymptoms => ({
+  feverWhenParalysisBegan: null,
+
+  musclePainWhenParalysisBegan: null,
+
+  siteOfParalysis: [],
+
+  otherParalysisSite: "",
+
+  paralysisAsymmetric: null,
+
+  paralysisMovedUpward: null,
+
+  sensationPresentAtParalysisSite: null,
+
+  childAtHealthFacility: null,
+
+  healthFacility: {
+    selectedFacilityOption: "",
+
+    otherFacilityName: "",
+
+    notificationDate: "",
+
+    medicalRecordNumber: "",
+  },
+});
 
 export const createInitialAFPFormData = (): AFPFormData => ({
   clinicalInformation: {
     paralysisPresent: null,
+
     paralysisFlaccid: null,
+
     paralysisSuddenOnset: null,
+
     paralysisOnsetDate: "",
+
     paralysisCausedByInjury: null,
+
     paralysisPresentAtBirth: null,
   },
 
   screeningDiagnosis: "",
+
+  signsSymptoms: createInitialAFPSignsSymptoms(),
 });
 
 interface AFPFormContextValue {
@@ -34,8 +73,11 @@ const AFPFormContext = createContext<AFPFormContextValue | null>(null);
 
 interface AFPFormProviderProps {
   children: ReactNode;
+
   value?: AFPFormData;
+
   onChange?: (data: AFPFormData) => void;
+
   readOnly?: boolean;
 }
 

@@ -1,9 +1,13 @@
 import { TextField } from "@mui/material";
 
 import DateField from "../fields/DateField";
+
 import YesNoField from "../fields/YesNoField";
 
-import { useAFPForm } from "../context/AFPFormContext";
+import {
+  createInitialAFPSignsSymptoms,
+  useAFPForm,
+} from "../context/AFPFormContext";
 
 import type { AFPClinicalInformation, YesNo } from "../types/afp.types";
 
@@ -18,9 +22,13 @@ type YesNoClinicalField =
 
 interface ClinicalYesNoQuestionProps {
   number: number;
+
   label: string;
+
   value: YesNo;
+
   onChange: (value: YesNo) => void;
+
   disabled?: boolean;
 }
 
@@ -34,15 +42,21 @@ function ClinicalYesNoQuestion({
   return (
     <div
       className="
-        grid gap-3 border-b border-[#dde7f0] py-4
+        grid gap-3
+        border-b
+        border-[#dde7f0]
+        py-4
         sm:grid-cols-[minmax(0,1fr)_auto]
         sm:items-start
       "
     >
       <p
         className="
-          m-0 pt-1 text-[13px]
-          font-semibold leading-5 text-[#173b69]
+          m-0 pt-1
+          text-[13px]
+          font-semibold
+          leading-5
+          text-[#173b69]
         "
       >
         {number}. {label}
@@ -60,7 +74,9 @@ function ClinicalYesNoQuestion({
 
 interface ClinicalDateQuestionProps {
   value: string;
+
   onChange: (value: string) => void;
+
   disabled?: boolean;
 }
 
@@ -72,15 +88,21 @@ function ClinicalDateQuestion({
   return (
     <div
       className="
-        grid gap-3 border-b border-[#dde7f0] py-4
+        grid gap-3
+        border-b
+        border-[#dde7f0]
+        py-4
         sm:grid-cols-[minmax(0,1fr)_190px]
         sm:items-start
       "
     >
       <p
         className="
-          m-0 pt-2 text-[13px]
-          font-semibold leading-5 text-[#173b69]
+          m-0 pt-2
+          text-[13px]
+          font-semibold
+          leading-5
+          text-[#173b69]
         "
       >
         4. Date of paralysis onset
@@ -104,10 +126,15 @@ export default function ClinicalInformationSection() {
 
   const screeningStatus = getAFPScreeningStatus(clinicalInformation);
 
-  const updateYesNoField = (field: YesNoClinicalField, value: YesNo) => {
+  const updateYesNoField = (
+    field: YesNoClinicalField,
+
+    value: YesNo,
+  ) => {
     updateData((previous) => {
       const nextClinicalInformation: AFPClinicalInformation = {
         ...previous.clinicalInformation,
+
         [field]: value,
       };
 
@@ -120,10 +147,28 @@ export default function ClinicalInformationSection() {
 
         clinicalInformation: nextClinicalInformation,
 
+        /*
+         * Diagnosis belongs only to
+         * not-eligible screening.
+         */
         screeningDiagnosis:
           nextScreeningStatus === "not_eligible"
             ? previous.screeningDiagnosis
             : "",
+
+        /*
+         * Signs / Symptoms is a
+         * dependent investigation
+         * section.
+         *
+         * If screening is no longer
+         * eligible, hidden data must
+         * not remain in state.
+         */
+        signsSymptoms:
+          nextScreeningStatus === "eligible"
+            ? previous.signsSymptoms
+            : createInitialAFPSignsSymptoms(),
       };
     });
   };
@@ -134,6 +179,7 @@ export default function ClinicalInformationSection() {
 
       clinicalInformation: {
         ...previous.clinicalInformation,
+
         paralysisOnsetDate: value,
       },
     }));
@@ -142,6 +188,7 @@ export default function ClinicalInformationSection() {
   const updateScreeningDiagnosis = (value: string) => {
     updateData((previous) => ({
       ...previous,
+
       screeningDiagnosis: value,
     }));
   };
@@ -149,21 +196,27 @@ export default function ClinicalInformationSection() {
   return (
     <section
       className="
-        overflow-hidden rounded-xl
-        border border-[#d4e2ef]
-        bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]
+        overflow-hidden
+        rounded-xl
+        border
+        border-[#d4e2ef]
+        bg-white
+        shadow-[0_1px_2px_rgba(15,23,42,0.03)]
       "
     >
       <div
         className="
-          border-b border-[#e0e8f0]
+          border-b
+          border-[#e0e8f0]
           px-5 py-3
           sm:px-7
         "
       >
         <h2
           className="
-            m-0 text-[18px] font-bold
+            m-0
+            text-[18px]
+            font-bold
             text-[#173b69]
           "
         >
@@ -173,11 +226,12 @@ export default function ClinicalInformationSection() {
 
       <div
         className="
-          grid grid-cols-1
+          grid
+          grid-cols-1
           px-5 pb-5
+          sm:px-7
           lg:grid-cols-2
           lg:gap-x-10
-          sm:px-7
         "
       >
         <div>
@@ -240,18 +294,23 @@ export default function ClinicalInformationSection() {
       {screeningStatus === "not_eligible" && (
         <div
           className="
-            mx-5 mb-5 rounded-lg
-            border border-[#f0cf8c]
+            mx-5 mb-5
+            rounded-lg
+            border
+            border-[#f0cf8c]
             bg-[#fff9ec]
             px-4 py-4
-            sm:mx-7 sm:px-5
+            sm:mx-7
+            sm:px-5
           "
         >
           <label
             htmlFor="afp-screening-diagnosis"
             className="
-              mb-2 block text-[13px]
-              font-medium text-[#8a5a13]
+              mb-2 block
+              text-[13px]
+              font-medium
+              text-[#8a5a13]
             "
           >
             Specify the diagnosis, if known:
@@ -275,6 +334,7 @@ export default function ClinicalInformationSection() {
 
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
+
                 backgroundColor: "#ffffff",
               },
 
