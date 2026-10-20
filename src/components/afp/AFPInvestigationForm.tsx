@@ -1,5 +1,6 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
+import ReflexesSection from "./sections/ReflexesSection";
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
 import TravelHistorySection from "./sections/TravelHistorySection";
 import VaccinationHistorySection from "./sections/VaccinationHistorySection";
@@ -17,6 +18,7 @@ interface AFPFormContentProps {
 
 function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
   const { data } = useAFPForm();
+
   const screeningStatus = getAFPScreeningStatus(data.clinicalInformation);
 
   return (
@@ -45,6 +47,7 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
           <SignsSymptomsSection facilityOptions={facilityOptions} />
           <VaccinationHistorySection />
           <TravelHistorySection />
+          <ReflexesSection />
           <div
             className="
               rounded-lg
@@ -58,8 +61,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
               text-[#64748b]
             "
           >
-            Clinical Examination and the remaining investigation sections will
-            appear here in the next phases.
+            Muscle Strength and the remaining investigation sections will appear
+            here in the next phases.
           </div>
         </>
       )}

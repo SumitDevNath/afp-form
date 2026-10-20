@@ -1,18 +1,14 @@
 import { TextField } from "@mui/material";
-
 import DateField from "../fields/DateField";
-
 import YesNoField from "../fields/YesNoField";
-
 import {
   createInitialAFPSignsSymptoms,
   createInitialAFPVaccinationHistory,
   createInitialAFPTravelHistory,
+  createInitialAFPClinicalExamination,
   useAFPForm,
 } from "../context/AFPFormContext";
-
 import type { AFPClinicalInformation, YesNo } from "../types/afp.types";
-
 import { getAFPScreeningStatus } from "../utils/afpScreening.utils";
 
 type YesNoClinicalField =
@@ -76,9 +72,7 @@ function ClinicalYesNoQuestion({
 
 interface ClinicalDateQuestionProps {
   value: string;
-
   onChange: (value: string) => void;
-
   disabled?: boolean;
 }
 
@@ -123,11 +117,8 @@ function ClinicalDateQuestion({
 
 export default function ClinicalInformationSection() {
   const { data, updateData, readOnly } = useAFPForm();
-
   const clinicalInformation = data.clinicalInformation;
-
   const screeningStatus = getAFPScreeningStatus(clinicalInformation);
-
   const updateYesNoField = (
     field: YesNoClinicalField,
 
@@ -146,9 +137,7 @@ export default function ClinicalInformationSection() {
 
       return {
         ...previous,
-
         clinicalInformation: nextClinicalInformation,
-
         /*
          * Diagnosis belongs only to
          * not-eligible screening.
@@ -157,7 +146,6 @@ export default function ClinicalInformationSection() {
           nextScreeningStatus === "not_eligible"
             ? previous.screeningDiagnosis
             : "",
-
         /*
          * Signs / Symptoms is a
          * dependent investigation
@@ -179,6 +167,10 @@ export default function ClinicalInformationSection() {
           nextScreeningStatus === "eligible"
             ? previous.travelHistory
             : createInitialAFPTravelHistory(),
+        clinicalExamination:
+          nextScreeningStatus === "eligible"
+            ? previous.clinicalExamination
+            : createInitialAFPClinicalExamination(),
       };
     });
   };
@@ -186,10 +178,8 @@ export default function ClinicalInformationSection() {
   const updateOnsetDate = (value: string) => {
     updateData((previous) => ({
       ...previous,
-
       clinicalInformation: {
         ...previous.clinicalInformation,
-
         paralysisOnsetDate: value,
       },
     }));
@@ -198,7 +188,6 @@ export default function ClinicalInformationSection() {
   const updateScreeningDiagnosis = (value: string) => {
     updateData((previous) => ({
       ...previous,
-
       screeningDiagnosis: value,
     }));
   };
@@ -341,13 +330,11 @@ export default function ClinicalInformationSection() {
             }}
             sx={{
               maxWidth: 520,
-
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
 
                 backgroundColor: "#ffffff",
               },
-
               "& input": {
                 fontSize: "0.82rem",
               },

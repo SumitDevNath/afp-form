@@ -1,13 +1,7 @@
 import FlightOutlinedIcon from "@mui/icons-material/FlightOutlined";
-
-import { Alert } from "@mui/material";
-
 import DateField from "../fields/DateField";
-
 import ToggleSwitch from "../fields/ToggleSwitch";
-
 import { useAFPForm } from "../context/AFPFormContext";
-
 import type { AFPTravelHistory } from "../types/afp.types";
 
 export default function TravelHistorySection() {
@@ -231,29 +225,6 @@ export default function TravelHistorySection() {
             </div>
           </div>
 
-          {/* DEVELOPMENT NOTE 
-          <Alert
-            severity="info"
-            sx={{
-              mt: 2,
-
-              border: "1px solid #d7e5f4",
-
-              backgroundColor: "#f7fbff",
-
-              color: "#52677e",
-
-              "& .MuiAlert-message": {
-                fontSize: "0.75rem",
-
-                lineHeight: 1.5,
-              },
-            }}
-          >
-            Standalone development placeholder only. The senior developer can
-            replace this block with the existing Register Case travel component.
-          </Alert>
-          */}
           {/* AFP-SPECIFIC DSFP / SIMO FIELD */}
           <div
             className="

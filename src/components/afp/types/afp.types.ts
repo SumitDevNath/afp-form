@@ -15,6 +15,10 @@ export type AFPParalysisSite =
 
 export type VaccinationRecordSource = "card" | "history" | null;
 
+export type ReflexScoreCode = "0" | "1+" | "2+" | "3+" | "4+" | null;
+
+export type PlantarReflexValue = "flexor" | "extensor" | "equivocal" | null;
+
 export interface AFPClinicalInformation {
   paralysisPresent: YesNo;
   paralysisFlaccid: YesNo;
@@ -76,27 +80,46 @@ export interface AFPVaccinationHistory {
 }
 
 export interface AFPTravelHistory {
-  /**
-   * This corresponds to the SVG control:
-   * "Travel outside area in last 30 days?"
-   *
-   * It controls whether the AFP travel
-   * details area is active.
-   */
   travelOutsideAreaLast30Days: boolean;
 
-  /**
-   * AFP-specific field.
-   *
-   * The SVG displays this as a toggle.
-   */
   notifiedToConcernedDsfpSimo: boolean;
 
-  /**
-   * Used only when
-   * notifiedToConcernedDsfpSimo = true.
-   */
   notificationDate: string;
+}
+
+/**
+ * IMPORTANT:
+ *
+ * The Figma SVG shows the locations of
+ * these eight reflex selectors but does
+ * not identify their anatomical names.
+ *
+ * These keys are positional placeholders
+ * until the medical/source mapping is
+ * confirmed.
+ */
+export interface AFPReflexScores {
+  rightUpper1: ReflexScoreCode;
+  rightUpper2: ReflexScoreCode;
+  rightLower1: ReflexScoreCode;
+  rightLower2: ReflexScoreCode;
+
+  leftUpper1: ReflexScoreCode;
+  leftUpper2: ReflexScoreCode;
+  leftLower1: ReflexScoreCode;
+  leftLower2: ReflexScoreCode;
+}
+
+export interface AFPReflexExamination {
+  scores: AFPReflexScores;
+
+  rightPlantarReflex: PlantarReflexValue;
+
+  leftPlantarReflex: PlantarReflexValue;
+}
+
+export interface AFPClinicalExamination {
+  reflexes: AFPReflexExamination;
 }
 
 export interface AFPFormData {
@@ -109,6 +132,8 @@ export interface AFPFormData {
   vaccinationHistory: AFPVaccinationHistory;
 
   travelHistory: AFPTravelHistory;
+
+  clinicalExamination: AFPClinicalExamination;
 }
 
 export interface AFPFacilityOption {

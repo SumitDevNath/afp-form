@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import type {
+  AFPClinicalExamination,
   AFPFormData,
   AFPFormUpdater,
   AFPSignsSymptoms,
@@ -79,6 +80,33 @@ export const createInitialAFPTravelHistory = (): AFPTravelHistory => ({
   notificationDate: "",
 });
 
+export const createInitialAFPClinicalExamination =
+  (): AFPClinicalExamination => ({
+    reflexes: {
+      scores: {
+        rightUpper1: null,
+
+        rightUpper2: null,
+
+        rightLower1: null,
+
+        rightLower2: null,
+
+        leftUpper1: null,
+
+        leftUpper2: null,
+
+        leftLower1: null,
+
+        leftLower2: null,
+      },
+
+      rightPlantarReflex: null,
+
+      leftPlantarReflex: null,
+    },
+  });
+
 export const createInitialAFPFormData = (): AFPFormData => ({
   clinicalInformation: {
     paralysisPresent: null,
@@ -101,6 +129,8 @@ export const createInitialAFPFormData = (): AFPFormData => ({
   vaccinationHistory: createInitialAFPVaccinationHistory(),
 
   travelHistory: createInitialAFPTravelHistory(),
+
+  clinicalExamination: createInitialAFPClinicalExamination(),
 });
 
 interface AFPFormContextValue {
