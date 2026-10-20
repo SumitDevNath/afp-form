@@ -1,8 +1,15 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
+
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
+
+import MuscleStrengthSection from "./sections/MuscleStrengthSection";
+
 import ReflexesSection from "./sections/ReflexesSection";
+
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
+
 import TravelHistorySection from "./sections/TravelHistorySection";
+
 import VaccinationHistorySection from "./sections/VaccinationHistorySection";
 
 import type {
@@ -45,9 +52,15 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
       {screeningStatus === "eligible" && (
         <>
           <SignsSymptomsSection facilityOptions={facilityOptions} />
+
           <VaccinationHistorySection />
+
           <TravelHistorySection />
+
           <ReflexesSection />
+
+          <MuscleStrengthSection />
+
           <div
             className="
               rounded-lg
@@ -61,8 +74,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
               text-[#64748b]
             "
           >
-            Muscle Strength and the remaining investigation sections will appear
-            here in the next phases.
+            Previous healthcare contacts and the remaining investigation
+            sections will appear here in the next phases.
           </div>
         </>
       )}

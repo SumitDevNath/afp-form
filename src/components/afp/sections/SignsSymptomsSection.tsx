@@ -1,7 +1,11 @@
 import { TextField } from "@mui/material";
+
 import CheckboxField from "../fields/CheckboxField";
+
 import DateField from "../fields/DateField";
+
 import SelectField from "../fields/SelectField";
+
 import YesNoUnknownField from "../fields/YesNoUnknownField";
 
 import {
@@ -33,9 +37,13 @@ interface SignsSymptomsSectionProps {
 
 interface QuestionRowProps {
   number: number;
+
   label: string;
+
   value: YesNoUnknown;
+
   onChange: (value: YesNoUnknown) => void;
+
   disabled?: boolean;
 }
 
@@ -81,7 +89,16 @@ function QuestionRow({
   disabled = false,
 }: QuestionRowProps) {
   return (
-    <div className="grid gap-3 border-b border-[#dde7f0] py-4 sm:grid-cols-[minmax(0,1fr)_auto]sm:items-start">
+    <div
+      className="
+        grid gap-3
+        border-b
+        border-[#dde7f0]
+        py-4
+        sm:grid-cols-[minmax(0,1fr)_auto]
+        sm:items-start
+      "
+    >
       <p
         className="
           m-0 pt-1
@@ -199,6 +216,7 @@ export default function SignsSymptomsSection({
   const updateOtherParalysisSite = (value: string) => {
     updateSigns((previous) => ({
       ...previous,
+
       otherParalysisSite: value,
     }));
   };
@@ -206,9 +224,12 @@ export default function SignsSymptomsSection({
   const updateFacilityOption = (value: string) => {
     updateSigns((previous) => ({
       ...previous,
+
       healthFacility: {
         ...previous.healthFacility,
+
         selectedFacilityOption: value,
+
         /*
          * Clear custom facility
          * name when the selected
@@ -229,6 +250,7 @@ export default function SignsSymptomsSection({
 
       healthFacility: {
         ...previous.healthFacility,
+
         otherFacilityName: value,
       },
     }));
@@ -240,6 +262,7 @@ export default function SignsSymptomsSection({
 
       healthFacility: {
         ...previous.healthFacility,
+
         notificationDate: value,
       },
     }));
@@ -251,6 +274,7 @@ export default function SignsSymptomsSection({
 
       healthFacility: {
         ...previous.healthFacility,
+
         medicalRecordNumber: value,
       },
     }));
@@ -400,7 +424,15 @@ export default function SignsSymptomsSection({
               ))}
           </div>
 
-          <div className="mt-3 grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
+          <div
+            className="
+              mt-3
+              grid
+              gap-2
+              sm:grid-cols-[auto_minmax(0,1fr)]
+              sm:items-start
+            "
+          >
             <CheckboxField
               label="Other"
               checked={hasOtherParalysisSite}
@@ -512,7 +544,7 @@ export default function SignsSymptomsSection({
                   text-[#52677e]
                 "
               >
-                Mention the health facility
+                If Yes, which?
               </label>
 
               <SelectField
@@ -557,12 +589,15 @@ export default function SignsSymptomsSection({
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         minHeight: 38,
+
                         borderRadius: "8px",
+
                         backgroundColor: "#ffffff",
                       },
 
                       "& input": {
                         py: "8px",
+
                         fontSize: "0.78rem",
                       },
                     }}

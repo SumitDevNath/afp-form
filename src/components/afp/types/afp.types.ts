@@ -14,11 +14,9 @@ export type AFPParalysisSite =
   | "other";
 
 export type VaccinationRecordSource = "card" | "history" | null;
-
 export type ReflexScoreCode = "0" | "1+" | "2+" | "3+" | "4+" | null;
-
 export type PlantarReflexValue = "flexor" | "extensor" | "equivocal" | null;
-
+export type MuscleScore = 0 | 1 | 2 | 3 | 4 | 5 | null;
 export interface AFPClinicalInformation {
   paralysisPresent: YesNo;
   paralysisFlaccid: YesNo;
@@ -34,48 +32,31 @@ export interface AFPHealthFacilityDetails {
   notificationDate: string;
   medicalRecordNumber: string;
 }
-
 export interface AFPSignsSymptoms {
   feverWhenParalysisBegan: YesNoUnknown;
-
   musclePainWhenParalysisBegan: YesNoUnknown;
-
   siteOfParalysis: AFPParalysisSite[];
-
   otherParalysisSite: string;
-
   paralysisAsymmetric: YesNoUnknown;
-
   paralysisMovedUpward: YesNoUnknown;
-
   sensationPresentAtParalysisSite: YesNoUnknown;
-
   childAtHealthFacility: YesNoUnknown;
-
   healthFacility: AFPHealthFacilityDetails;
 }
 
 export interface AFPVaccinationDoseEntry {
   recordSource: VaccinationRecordSource;
-
   numberOfDoses: number | null;
 }
 
 export interface AFPVaccinationHistory {
   available: boolean;
-
   opvCampaignDoses: AFPVaccinationDoseEntry;
-
   opvRoutineDoses: AFPVaccinationDoseEntry;
-
   lastOpvDoseBeforeParalysisDate: string;
-
   ipvDoses: AFPVaccinationDoseEntry;
-
   lastIpvDoseBeforeParalysisDate: string;
-
   opvGivenAfterParalysis: YesNoUnknown;
-
   opvAfterParalysisDate: string;
 }
 
@@ -87,17 +68,6 @@ export interface AFPTravelHistory {
   notificationDate: string;
 }
 
-/**
- * IMPORTANT:
- *
- * The Figma SVG shows the locations of
- * these eight reflex selectors but does
- * not identify their anatomical names.
- *
- * These keys are positional placeholders
- * until the medical/source mapping is
- * confirmed.
- */
 export interface AFPReflexScores {
   rightUpper1: ReflexScoreCode;
   rightUpper2: ReflexScoreCode;
@@ -118,8 +88,51 @@ export interface AFPReflexExamination {
   leftPlantarReflex: PlantarReflexValue;
 }
 
+export interface AFPMuscleStrengthPair {
+  right: MuscleScore;
+  left: MuscleScore;
+}
+
+export interface AFPUpperLimbMuscleStrength {
+  flexWrist: AFPMuscleStrengthPair;
+
+  extendWrist: AFPMuscleStrengthPair;
+
+  flexElbow: AFPMuscleStrengthPair;
+
+  extendElbow: AFPMuscleStrengthPair;
+
+  flexShoulder: AFPMuscleStrengthPair;
+
+  extendShoulder: AFPMuscleStrengthPair;
+
+  handGrip: AFPMuscleStrengthPair;
+}
+
+export interface AFPLowerLimbMuscleStrength {
+  flexHip: AFPMuscleStrengthPair;
+
+  extendHip: AFPMuscleStrengthPair;
+
+  flexKnee: AFPMuscleStrengthPair;
+
+  extendKnee: AFPMuscleStrengthPair;
+
+  flexAnkle: AFPMuscleStrengthPair;
+
+  extendAnkle: AFPMuscleStrengthPair;
+}
+
+export interface AFPMuscleStrength {
+  upperLimb: AFPUpperLimbMuscleStrength;
+
+  lowerLimb: AFPLowerLimbMuscleStrength;
+}
+
 export interface AFPClinicalExamination {
   reflexes: AFPReflexExamination;
+
+  muscleStrength: AFPMuscleStrength;
 }
 
 export interface AFPFormData {
