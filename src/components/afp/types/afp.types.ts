@@ -14,9 +14,27 @@ export type AFPParalysisSite =
   | "other";
 
 export type VaccinationRecordSource = "card" | "history" | null;
+
 export type ReflexScoreCode = "0" | "1+" | "2+" | "3+" | "4+" | null;
+
 export type PlantarReflexValue = "flexor" | "extensor" | "equivocal" | null;
+
 export type MuscleScore = 0 | 1 | 2 | 3 | 4 | 5 | null;
+
+export type AFPFirstContactCategory =
+  | "Regd doctor"
+  | "GoB facility"
+  | "Village doctor"
+  | "NGO Clinic"
+  | "Homeopath"
+  | "Kabiraj"
+  | "Imam"
+  | "Pharmacist"
+  | "HA"
+  | "FWA"
+  | "Other"
+  | null;
+
 export interface AFPClinicalInformation {
   paralysisPresent: YesNo;
   paralysisFlaccid: YesNo;
@@ -32,31 +50,47 @@ export interface AFPHealthFacilityDetails {
   notificationDate: string;
   medicalRecordNumber: string;
 }
+
 export interface AFPSignsSymptoms {
   feverWhenParalysisBegan: YesNoUnknown;
   musclePainWhenParalysisBegan: YesNoUnknown;
+
   siteOfParalysis: AFPParalysisSite[];
+
   otherParalysisSite: string;
+
   paralysisAsymmetric: YesNoUnknown;
+
   paralysisMovedUpward: YesNoUnknown;
+
   sensationPresentAtParalysisSite: YesNoUnknown;
+
   childAtHealthFacility: YesNoUnknown;
+
   healthFacility: AFPHealthFacilityDetails;
 }
 
 export interface AFPVaccinationDoseEntry {
   recordSource: VaccinationRecordSource;
+
   numberOfDoses: number | null;
 }
 
 export interface AFPVaccinationHistory {
   available: boolean;
+
   opvCampaignDoses: AFPVaccinationDoseEntry;
+
   opvRoutineDoses: AFPVaccinationDoseEntry;
+
   lastOpvDoseBeforeParalysisDate: string;
+
   ipvDoses: AFPVaccinationDoseEntry;
+
   lastIpvDoseBeforeParalysisDate: string;
+
   opvGivenAfterParalysis: YesNoUnknown;
+
   opvAfterParalysisDate: string;
 }
 
@@ -135,6 +169,38 @@ export interface AFPClinicalExamination {
   muscleStrength: AFPMuscleStrength;
 }
 
+export interface AFPHealthcareContact {
+  /**
+   * Stable frontend-generated ID.
+   * Not a backend/database identifier.
+   */
+  id: string;
+
+  providerName: string;
+
+  address: string;
+
+  dateCaseVisited: string;
+
+  alreadyInNetwork: YesNoUnknown;
+
+  reportedCase: YesNo;
+
+  actionTakenPlanned: string;
+}
+
+export interface AFPPreviousHealthcareContacts {
+  contacts: AFPHealthcareContact[];
+
+  firstContactCategory: AFPFirstContactCategory;
+
+  firstContactCategoryOther: string;
+
+  additionalComments: string;
+
+  suspectedDiagnosis: string;
+}
+
 export interface AFPFormData {
   clinicalInformation: AFPClinicalInformation;
 
@@ -147,10 +213,23 @@ export interface AFPFormData {
   travelHistory: AFPTravelHistory;
 
   clinicalExamination: AFPClinicalExamination;
+
+  previousHealthcareContacts: AFPPreviousHealthcareContacts;
 }
 
 export interface AFPFacilityOption {
   value: string;
+  label: string;
+}
+
+export interface AFPSuspectedDiagnosisOption {
+  /**
+   * Frontend-configured value only.
+   * Backend mapping is deliberately
+   * outside the AFP module.
+   */
+  value: string;
+
   label: string;
 }
 
@@ -164,4 +243,6 @@ export interface AFPInvestigationFormProps {
   readOnly?: boolean;
 
   facilityOptions?: AFPFacilityOption[];
+
+  suspectedDiagnosisOptions?: AFPSuspectedDiagnosisOption[];
 }

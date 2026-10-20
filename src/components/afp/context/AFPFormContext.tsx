@@ -11,6 +11,7 @@ import type {
   AFPClinicalExamination,
   AFPFormData,
   AFPFormUpdater,
+  AFPPreviousHealthcareContacts,
   AFPSignsSymptoms,
   AFPTravelHistory,
   AFPVaccinationHistory,
@@ -139,6 +140,46 @@ export const createInitialAFPClinicalExamination =
     },
   });
 
+function createFrontendContactId(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `contact-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export const createInitialAFPHealthcareContact = () => ({
+  id: createFrontendContactId(),
+
+  providerName: "",
+
+  address: "",
+
+  dateCaseVisited: "",
+
+  alreadyInNetwork: null,
+
+  reportedCase: null,
+
+  actionTakenPlanned: "",
+});
+
+export const createInitialAFPPreviousHealthcareContacts =
+  (): AFPPreviousHealthcareContacts => ({
+    contacts: [createInitialAFPHealthcareContact()],
+
+    firstContactCategory: null,
+
+    firstContactCategoryOther: "",
+
+    additionalComments: "",
+
+    suspectedDiagnosis: "",
+  });
+
 export const createInitialAFPFormData = (): AFPFormData => ({
   clinicalInformation: {
     paralysisPresent: null,
@@ -148,6 +189,7 @@ export const createInitialAFPFormData = (): AFPFormData => ({
     paralysisCausedByInjury: null,
     paralysisPresentAtBirth: null,
   },
+  previousHealthcareContacts: createInitialAFPPreviousHealthcareContacts(),
   screeningDiagnosis: "",
   signsSymptoms: createInitialAFPSignsSymptoms(),
   vaccinationHistory: createInitialAFPVaccinationHistory(),
@@ -188,13 +230,17 @@ export function AFPFormProvider({
 
       if (isControlled) {
         const nextData = updater(data);
+
         onChange?.(nextData);
+
         return;
       }
 
       setInternalData((previous) => {
         const nextData = updater(previous);
+
         onChange?.(nextData);
+
         return nextData;
       });
     },

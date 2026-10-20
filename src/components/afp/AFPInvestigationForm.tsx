@@ -4,6 +4,8 @@ import ClinicalInformationSection from "./sections/ClinicalInformationSection";
 
 import MuscleStrengthSection from "./sections/MuscleStrengthSection";
 
+import PreviousHealthcareContactsSection from "./sections/PreviousHealthcareContactsSection";
+
 import ReflexesSection from "./sections/ReflexesSection";
 
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
@@ -15,15 +17,21 @@ import VaccinationHistorySection from "./sections/VaccinationHistorySection";
 import type {
   AFPFacilityOption,
   AFPInvestigationFormProps,
+  AFPSuspectedDiagnosisOption,
 } from "./types/afp.types";
 
 import { getAFPScreeningStatus } from "./utils/afpScreening.utils";
 
 interface AFPFormContentProps {
   facilityOptions?: AFPFacilityOption[];
+
+  suspectedDiagnosisOptions?: AFPSuspectedDiagnosisOption[];
 }
 
-function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
+function AFPFormContent({
+  facilityOptions,
+  suspectedDiagnosisOptions,
+}: AFPFormContentProps) {
   const { data } = useAFPForm();
 
   const screeningStatus = getAFPScreeningStatus(data.clinicalInformation);
@@ -61,6 +69,10 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
 
           <MuscleStrengthSection />
 
+          <PreviousHealthcareContactsSection
+            suspectedDiagnosisOptions={suspectedDiagnosisOptions}
+          />
+
           <div
             className="
               rounded-lg
@@ -74,8 +86,7 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
               text-[#64748b]
             "
           >
-            Previous healthcare contacts and the remaining investigation
-            sections will appear here in the next phases.
+            Additional Information will be implemented in Phase 9.
           </div>
         </>
       )}
@@ -88,10 +99,14 @@ export default function AFPInvestigationForm({
   onChange,
   readOnly = false,
   facilityOptions,
+  suspectedDiagnosisOptions,
 }: AFPInvestigationFormProps) {
   return (
     <AFPFormProvider value={value} onChange={onChange} readOnly={readOnly}>
-      <AFPFormContent facilityOptions={facilityOptions} />
+      <AFPFormContent
+        facilityOptions={facilityOptions}
+        suspectedDiagnosisOptions={suspectedDiagnosisOptions}
+      />
     </AFPFormProvider>
   );
 }
