@@ -6,6 +6,7 @@ import YesNoField from "../fields/YesNoField";
 
 import {
   createInitialAFPSignsSymptoms,
+  createInitialAFPVaccinationHistory,
   useAFPForm,
 } from "../context/AFPFormContext";
 
@@ -169,6 +170,10 @@ export default function ClinicalInformationSection() {
           nextScreeningStatus === "eligible"
             ? previous.signsSymptoms
             : createInitialAFPSignsSymptoms(),
+        vaccinationHistory:
+          nextScreeningStatus === "eligible"
+            ? previous.vaccinationHistory
+            : createInitialAFPVaccinationHistory(),
       };
     });
   };

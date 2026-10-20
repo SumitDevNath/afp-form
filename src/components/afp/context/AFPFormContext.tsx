@@ -11,35 +11,53 @@ import type {
   AFPFormData,
   AFPFormUpdater,
   AFPSignsSymptoms,
+  AFPVaccinationHistory,
 } from "../types/afp.types";
 
 export const createInitialAFPSignsSymptoms = (): AFPSignsSymptoms => ({
   feverWhenParalysisBegan: null,
-
   musclePainWhenParalysisBegan: null,
-
   siteOfParalysis: [],
-
   otherParalysisSite: "",
-
   paralysisAsymmetric: null,
-
   paralysisMovedUpward: null,
-
   sensationPresentAtParalysisSite: null,
-
   childAtHealthFacility: null,
-
   healthFacility: {
     selectedFacilityOption: "",
-
     otherFacilityName: "",
-
     notificationDate: "",
-
     medicalRecordNumber: "",
   },
 });
+
+export const createInitialAFPVaccinationHistory =
+  (): AFPVaccinationHistory => ({
+    available: false,
+
+    opvCampaignDoses: {
+      recordSource: null,
+      numberOfDoses: null,
+    },
+
+    opvRoutineDoses: {
+      recordSource: null,
+      numberOfDoses: null,
+    },
+
+    lastOpvDoseBeforeParalysisDate: "",
+
+    ipvDoses: {
+      recordSource: null,
+      numberOfDoses: null,
+    },
+
+    lastIpvDoseBeforeParalysisDate: "",
+
+    opvGivenAfterParalysis: null,
+
+    opvAfterParalysisDate: "",
+  });
 
 export const createInitialAFPFormData = (): AFPFormData => ({
   clinicalInformation: {
@@ -59,6 +77,8 @@ export const createInitialAFPFormData = (): AFPFormData => ({
   screeningDiagnosis: "",
 
   signsSymptoms: createInitialAFPSignsSymptoms(),
+
+  vaccinationHistory: createInitialAFPVaccinationHistory(),
 });
 
 interface AFPFormContextValue {

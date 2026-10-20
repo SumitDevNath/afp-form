@@ -13,6 +13,8 @@ export type AFPParalysisSite =
   | "face"
   | "other";
 
+export type VaccinationRecordSource = "card" | "history" | null;
+
 export interface AFPClinicalInformation {
   paralysisPresent: YesNo;
   paralysisFlaccid: YesNo;
@@ -31,35 +33,71 @@ export interface AFPHealthFacilityDetails {
 
 export interface AFPSignsSymptoms {
   feverWhenParalysisBegan: YesNoUnknown;
+
   musclePainWhenParalysisBegan: YesNoUnknown;
+
   siteOfParalysis: AFPParalysisSite[];
+
   otherParalysisSite: string;
+
   paralysisAsymmetric: YesNoUnknown;
+
   paralysisMovedUpward: YesNoUnknown;
+
   sensationPresentAtParalysisSite: YesNoUnknown;
+
   childAtHealthFacility: YesNoUnknown;
+
   healthFacility: AFPHealthFacilityDetails;
+}
+
+export interface AFPVaccinationDoseEntry {
+  recordSource: VaccinationRecordSource;
+
+  numberOfDoses: number | null;
+}
+
+export interface AFPVaccinationHistory {
+  available: boolean;
+
+  opvCampaignDoses: AFPVaccinationDoseEntry;
+
+  opvRoutineDoses: AFPVaccinationDoseEntry;
+
+  lastOpvDoseBeforeParalysisDate: string;
+
+  ipvDoses: AFPVaccinationDoseEntry;
+
+  lastIpvDoseBeforeParalysisDate: string;
+
+  opvGivenAfterParalysis: YesNoUnknown;
+
+  opvAfterParalysisDate: string;
 }
 
 export interface AFPFormData {
   clinicalInformation: AFPClinicalInformation;
+
   /**
    * Used only when AFP screening status
    * is "not_eligible".
    */
   screeningDiagnosis: string;
+
   signsSymptoms: AFPSignsSymptoms;
+
+  vaccinationHistory: AFPVaccinationHistory;
 }
 
 export interface AFPFacilityOption {
   /**
    * Frontend option value only.
    *
-   * This is not a database ID unless the
-   * integrating application intentionally
-   * supplies one.
+   * This is not assumed to be a
+   * database ID.
    */
   value: string;
+
   label: string;
 }
 
@@ -67,14 +105,10 @@ export type AFPFormUpdater = (previous: AFPFormData) => AFPFormData;
 
 export interface AFPInvestigationFormProps {
   value?: AFPFormData;
+
   onChange?: (data: AFPFormData) => void;
+
   readOnly?: boolean;
-  /**
-   * Facility options supplied by the
-   * integrating application.
-   *
-   * Development placeholder options are
-   * used when this prop is omitted.
-   */
+
   facilityOptions?: AFPFacilityOption[];
 }

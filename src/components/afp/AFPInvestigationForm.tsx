@@ -1,8 +1,7 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
-
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
-
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
+import VaccinationHistorySection from "./sections/VaccinationHistorySection";
 
 import type {
   AFPFacilityOption,
@@ -31,7 +30,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
             border
             border-[#dbe5ef]
             bg-white
-            px-4 py-3
+            px-4
+            py-3
             text-sm
             text-[#64748b]
           "
@@ -44,6 +44,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
         <>
           <SignsSymptomsSection facilityOptions={facilityOptions} />
 
+          <VaccinationHistorySection />
+
           <div
             className="
               rounded-lg
@@ -51,7 +53,8 @@ function AFPFormContent({ facilityOptions }: AFPFormContentProps) {
               border-dashed
               border-[#cbd8e5]
               bg-[#f8fbff]
-              px-4 py-4
+              px-4
+              py-4
               text-sm
               text-[#64748b]
             "
