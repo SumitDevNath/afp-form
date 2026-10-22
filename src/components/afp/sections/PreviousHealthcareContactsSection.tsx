@@ -1,5 +1,8 @@
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-
+import DateField from "../fields/DateField";
+import YesNoField from "../fields/YesNoField";
+import YesNoUnknownField from "../fields/YesNoUnknownField";
+import { FIRST_CONTACT_CATEGORY_OPTIONS } from "../constants/afpHealthcareContacts";
 import {
   Button,
   FormControl,
@@ -8,20 +11,10 @@ import {
   TextField,
   type SelectChangeEvent,
 } from "@mui/material";
-
-import DateField from "../fields/DateField";
-
-import YesNoField from "../fields/YesNoField";
-
-import YesNoUnknownField from "../fields/YesNoUnknownField";
-
-import { FIRST_CONTACT_CATEGORY_OPTIONS } from "../constants/afpHealthcareContacts";
-
 import {
   createInitialAFPHealthcareContact,
   useAFPForm,
 } from "../context/AFPFormContext";
-
 import type {
   AFPFirstContactCategory,
   AFPHealthcareContact,
@@ -49,21 +42,13 @@ function CompactTextField({
   disabled = false,
 }: {
   id?: string;
-
   value: string;
-
   onChange: (value: string) => void;
-
   placeholder: string;
-
   ariaLabel: string;
-
   maxLength?: number;
-
   multiline?: boolean;
-
   minRows?: number;
-
   disabled?: boolean;
 }) {
   return (
@@ -86,9 +71,7 @@ function CompactTextField({
       sx={{
         "& .MuiOutlinedInput-root": {
           minHeight: multiline ? undefined : 40,
-
           borderRadius: "8px",
-
           backgroundColor: "#ffffff",
         },
 
@@ -98,7 +81,6 @@ function CompactTextField({
 
         "& textarea": {
           fontSize: "0.78rem",
-
           lineHeight: 1.5,
         },
       }}
@@ -118,25 +100,13 @@ function ContactBlock({
   disabled = false,
 }: {
   contact: AFPHealthcareContact;
-
   index: number;
-
   canRemove: boolean;
-
   onRemove: () => void;
-
-  onTextChange: (
-    field: ContactTextField,
-
-    value: string,
-  ) => void;
-
+  onTextChange: (field: ContactTextField, value: string) => void;
   onDateChange: (value: string) => void;
-
   onNetworkChange: (value: YesNoUnknown) => void;
-
   onReportChange: (value: YesNo) => void;
-
   disabled?: boolean;
 }) {
   const contactNumber = index + 1;
@@ -181,11 +151,8 @@ function ContactBlock({
             size="small"
             sx={{
               color: "#b42318",
-
               fontSize: "0.72rem",
-
               textTransform: "none",
-
               "&:hover": {
                 backgroundColor: "#fff1f0",
               },
@@ -351,9 +318,7 @@ export default function PreviousHealthcareContactsSection({
   suspectedDiagnosisOptions = [],
 }: PreviousHealthcareContactsSectionProps) {
   const { data, updateData, readOnly } = useAFPForm();
-
   const history = data.previousHealthcareContacts;
-
   const updateHistory = (
     updater: (
       previous: AFPPreviousHealthcareContacts,
@@ -373,7 +338,6 @@ export default function PreviousHealthcareContactsSection({
   ) => {
     updateHistory((previous) => ({
       ...previous,
-
       contacts: previous.contacts.map((contact) =>
         contact.id === id ? updater(contact) : contact,
       ),
@@ -383,7 +347,6 @@ export default function PreviousHealthcareContactsSection({
   const addContact = () => {
     updateHistory((previous) => ({
       ...previous,
-
       contacts: [...previous.contacts, createInitialAFPHealthcareContact()],
     }));
   };
@@ -404,50 +367,32 @@ export default function PreviousHealthcareContactsSection({
 
   const updateContactText = (
     id: string,
-
     field: ContactTextField,
-
     value: string,
   ) => {
     updateContact(id, (contact) => ({
       ...contact,
-
       [field]: value,
     }));
   };
 
-  const updateContactDate = (
-    id: string,
-
-    value: string,
-  ) => {
+  const updateContactDate = (id: string, value: string) => {
     updateContact(id, (contact) => ({
       ...contact,
-
       dateCaseVisited: value,
     }));
   };
 
-  const updateContactNetwork = (
-    id: string,
-
-    value: YesNoUnknown,
-  ) => {
+  const updateContactNetwork = (id: string, value: YesNoUnknown) => {
     updateContact(id, (contact) => ({
       ...contact,
-
       alreadyInNetwork: value,
     }));
   };
 
-  const updateContactReport = (
-    id: string,
-
-    value: YesNo,
-  ) => {
+  const updateContactReport = (id: string, value: YesNo) => {
     updateContact(id, (contact) => ({
       ...contact,
-
       reportedCase: value,
     }));
   };
@@ -455,9 +400,7 @@ export default function PreviousHealthcareContactsSection({
   const updateFirstContactCategory = (value: AFPFirstContactCategory) => {
     updateHistory((previous) => ({
       ...previous,
-
       firstContactCategory: value,
-
       firstContactCategoryOther:
         value === "Other" ? previous.firstContactCategoryOther : "",
     }));
@@ -465,7 +408,6 @@ export default function PreviousHealthcareContactsSection({
 
   const handleCategoryChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
-
     const validOption = FIRST_CONTACT_CATEGORY_OPTIONS.find(
       (option) => option.value === value,
     );
@@ -479,7 +421,6 @@ export default function PreviousHealthcareContactsSection({
 
   const handleDiagnosisChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
-
     const validOption = suspectedDiagnosisOptions.find(
       (option) => option.value === value,
     );
@@ -490,7 +431,6 @@ export default function PreviousHealthcareContactsSection({
 
     updateHistory((previous) => ({
       ...previous,
-
       suspectedDiagnosis: validOption.value,
     }));
   };
@@ -578,26 +518,16 @@ export default function PreviousHealthcareContactsSection({
               disabled={readOnly}
               sx={{
                 width: "fit-content",
-
                 borderRadius: "9px",
-
                 backgroundColor: "#2864d7",
-
                 px: 2.5,
-
                 py: 0.9,
-
                 fontSize: "0.78rem",
-
                 fontWeight: 700,
-
                 textTransform: "none",
-
                 boxShadow: "none",
-
                 "&:hover": {
                   backgroundColor: "#1f56bf",
-
                   boxShadow: "none",
                 },
               }}
@@ -685,11 +615,8 @@ export default function PreviousHealthcareContactsSection({
                 }}
                 sx={{
                   minHeight: 40,
-
                   borderRadius: "7px",
-
                   backgroundColor: "#ffffff",
-
                   fontSize: "0.78rem",
                 }}
                 MenuProps={{
@@ -815,11 +742,8 @@ export default function PreviousHealthcareContactsSection({
               }}
               sx={{
                 minHeight: 40,
-
                 borderRadius: "7px",
-
                 backgroundColor: "#ffffff",
-
                 fontSize: "0.78rem",
               }}
               MenuProps={{
@@ -827,10 +751,8 @@ export default function PreviousHealthcareContactsSection({
                   paper: {
                     sx: {
                       maxWidth: 420,
-
                       "& .MuiMenuItem-root": {
                         whiteSpace: "normal",
-
                         fontSize: "0.8rem",
                       },
                     },

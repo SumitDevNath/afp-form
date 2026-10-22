@@ -28,37 +28,26 @@ export default function ToggleSwitch({
         width: 46,
         height: 26,
         p: 0,
-
         "& .MuiSwitch-switchBase": {
           p: "3px",
-
           transitionDuration: "180ms",
-
           "&.Mui-checked": {
             transform: "translateX(20px)",
-
             color: "#ffffff",
-
             "& + .MuiSwitch-track": {
               backgroundColor: "#2563eb",
-
               opacity: 1,
             },
           },
         },
-
         "& .MuiSwitch-thumb": {
           width: 20,
           height: 20,
-
           boxShadow: "0 1px 2px rgba(15, 23, 42, 0.2)",
         },
-
         "& .MuiSwitch-track": {
           borderRadius: 13,
-
           backgroundColor: "#b6c3d3",
-
           opacity: 1,
         },
       }}

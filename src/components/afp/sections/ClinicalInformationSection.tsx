@@ -7,6 +7,7 @@ import {
   createInitialAFPTravelHistory,
   createInitialAFPClinicalExamination,
   useAFPForm,
+  createInitialAFPAdditionalInformation,
 } from "../context/AFPFormContext";
 import type { AFPClinicalInformation, YesNo } from "../types/afp.types";
 import { getAFPScreeningStatus } from "../utils/afpScreening.utils";
@@ -20,13 +21,9 @@ type YesNoClinicalField =
 
 interface ClinicalYesNoQuestionProps {
   number: number;
-
   label: string;
-
   value: YesNo;
-
   onChange: (value: YesNo) => void;
-
   disabled?: boolean;
 }
 
@@ -127,7 +124,6 @@ export default function ClinicalInformationSection() {
     updateData((previous) => {
       const nextClinicalInformation: AFPClinicalInformation = {
         ...previous.clinicalInformation,
-
         [field]: value,
       };
 
@@ -171,6 +167,10 @@ export default function ClinicalInformationSection() {
           nextScreeningStatus === "eligible"
             ? previous.clinicalExamination
             : createInitialAFPClinicalExamination(),
+        additionalInformation:
+          nextScreeningStatus === "eligible"
+            ? previous.additionalInformation
+            : createInitialAFPAdditionalInformation(),
       };
     });
   };
@@ -332,7 +332,6 @@ export default function ClinicalInformationSection() {
               maxWidth: 520,
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-
                 backgroundColor: "#ffffff",
               },
               "& input": {

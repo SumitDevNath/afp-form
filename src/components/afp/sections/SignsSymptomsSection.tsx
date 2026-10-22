@@ -1,21 +1,14 @@
 import { TextField } from "@mui/material";
-
 import CheckboxField from "../fields/CheckboxField";
-
 import DateField from "../fields/DateField";
-
 import SelectField from "../fields/SelectField";
-
 import YesNoUnknownField from "../fields/YesNoUnknownField";
-
 import {
   AFP_DEMO_FACILITY_OPTIONS,
   AFP_OTHER_FACILITY_OPTION,
   AFP_OTHER_FACILITY_VALUE,
 } from "../constants/afpFacilities";
-
 import { useAFPForm } from "../context/AFPFormContext";
-
 import type {
   AFPFacilityOption,
   AFPParalysisSite,
@@ -37,13 +30,9 @@ interface SignsSymptomsSectionProps {
 
 interface QuestionRowProps {
   number: number;
-
   label: string;
-
   value: YesNoUnknown;
-
   onChange: (value: YesNoUnknown) => void;
-
   disabled?: boolean;
 }
 
@@ -170,14 +159,10 @@ export default function SignsSymptomsSection({
       if (field === "childAtHealthFacility" && value !== "yes") {
         return {
           ...next,
-
           healthFacility: {
             selectedFacilityOption: "",
-
             otherFacilityName: "",
-
             notificationDate: "",
-
             medicalRecordNumber: "",
           },
         };
@@ -203,9 +188,7 @@ export default function SignsSymptomsSection({
 
       return {
         ...previous,
-
         siteOfParalysis: nextSites,
-
         otherParalysisSite: nextSites.includes("other")
           ? previous.otherParalysisSite
           : "",
@@ -227,9 +210,7 @@ export default function SignsSymptomsSection({
 
       healthFacility: {
         ...previous.healthFacility,
-
         selectedFacilityOption: value,
-
         /*
          * Clear custom facility
          * name when the selected
@@ -247,10 +228,8 @@ export default function SignsSymptomsSection({
   const updateOtherFacilityName = (value: string) => {
     updateSigns((previous) => ({
       ...previous,
-
       healthFacility: {
         ...previous.healthFacility,
-
         otherFacilityName: value,
       },
     }));
@@ -259,10 +238,8 @@ export default function SignsSymptomsSection({
   const updateNotificationDate = (value: string) => {
     updateSigns((previous) => ({
       ...previous,
-
       healthFacility: {
         ...previous.healthFacility,
-
         notificationDate: value,
       },
     }));
@@ -271,10 +248,8 @@ export default function SignsSymptomsSection({
   const updateMedicalRecordNumber = (value: string) => {
     updateSigns((previous) => ({
       ...previous,
-
       healthFacility: {
         ...previous.healthFacility,
-
         medicalRecordNumber: value,
       },
     }));
@@ -459,15 +434,12 @@ export default function SignsSymptomsSection({
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     minHeight: 38,
-
                     borderRadius: "8px",
-
                     backgroundColor: "#ffffff",
                   },
 
                   "& input": {
                     py: "8px",
-
                     fontSize: "0.78rem",
                   },
                 }}
@@ -589,15 +561,12 @@ export default function SignsSymptomsSection({
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         minHeight: 38,
-
                         borderRadius: "8px",
-
                         backgroundColor: "#ffffff",
                       },
 
                       "& input": {
                         py: "8px",
-
                         fontSize: "0.78rem",
                       },
                     }}
@@ -658,15 +627,12 @@ export default function SignsSymptomsSection({
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     minHeight: 38,
-
                     borderRadius: "8px",
-
                     backgroundColor: "#ffffff",
                   },
 
                   "& input": {
                     py: "8px",
-
                     fontSize: "0.78rem",
                   },
                 }}

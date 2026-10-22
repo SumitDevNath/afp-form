@@ -1,30 +1,21 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
-
+import AdditionalInformationSection from "./sections/AdditionalInformationSection";
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
-
 import MuscleStrengthSection from "./sections/MuscleStrengthSection";
-
 import PreviousHealthcareContactsSection from "./sections/PreviousHealthcareContactsSection";
-
 import ReflexesSection from "./sections/ReflexesSection";
-
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
-
 import TravelHistorySection from "./sections/TravelHistorySection";
-
 import VaccinationHistorySection from "./sections/VaccinationHistorySection";
-
 import type {
   AFPFacilityOption,
   AFPInvestigationFormProps,
   AFPSuspectedDiagnosisOption,
 } from "./types/afp.types";
-
 import { getAFPScreeningStatus } from "./utils/afpScreening.utils";
 
 interface AFPFormContentProps {
   facilityOptions?: AFPFacilityOption[];
-
   suspectedDiagnosisOptions?: AFPSuspectedDiagnosisOption[];
 }
 
@@ -60,34 +51,14 @@ function AFPFormContent({
       {screeningStatus === "eligible" && (
         <>
           <SignsSymptomsSection facilityOptions={facilityOptions} />
-
           <VaccinationHistorySection />
-
           <TravelHistorySection />
-
           <ReflexesSection />
-
           <MuscleStrengthSection />
-
           <PreviousHealthcareContactsSection
             suspectedDiagnosisOptions={suspectedDiagnosisOptions}
           />
-
-          <div
-            className="
-              rounded-lg
-              border
-              border-dashed
-              border-[#cbd8e5]
-              bg-[#f8fbff]
-              px-4
-              py-4
-              text-sm
-              text-[#64748b]
-            "
-          >
-            Additional Information will be implemented in Phase 9.
-          </div>
+          <AdditionalInformationSection />
         </>
       )}
     </div>

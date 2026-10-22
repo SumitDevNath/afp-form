@@ -42,15 +42,7 @@ export default function SelectField({
         }}
         renderValue={(selected) => {
           if (!selected) {
-            return (
-              <span
-                className="
-                  text-[#94a3b8]
-                "
-              >
-                {placeholder}
-              </span>
-            );
+            return <span className="text-[#94a3b8]">{placeholder}</span>;
           }
 
           const option = options.find((item) => item.value === selected);
@@ -59,25 +51,18 @@ export default function SelectField({
         }}
         sx={{
           minHeight: 38,
-
           borderRadius: "8px",
-
           backgroundColor: "#ffffff",
-
           fontSize: "0.78rem",
-
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#b9c8d8",
           },
-
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: "#8ca6c1",
           },
-
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2563eb",
           },
-
           "& .MuiSelect-select": {
             py: "8px",
           },

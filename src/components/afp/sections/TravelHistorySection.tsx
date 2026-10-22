@@ -14,7 +14,6 @@ export default function TravelHistorySection() {
   ) => {
     updateData((previous) => ({
       ...previous,
-
       travelHistory: updater(previous.travelHistory),
     }));
   };
@@ -29,16 +28,13 @@ export default function TravelHistorySection() {
       if (!checked) {
         return {
           travelOutsideAreaLast30Days: false,
-
           notifiedToConcernedDsfpSimo: false,
-
           notificationDate: "",
         };
       }
 
       return {
         ...previous,
-
         travelOutsideAreaLast30Days: true,
       };
     });
@@ -47,9 +43,7 @@ export default function TravelHistorySection() {
   const handleDsfpSimoChange = (checked: boolean) => {
     updateTravelHistory((previous) => ({
       ...previous,
-
       notifiedToConcernedDsfpSimo: checked,
-
       /*
        * Date belongs only to an
        * affirmative notification.
@@ -61,7 +55,6 @@ export default function TravelHistorySection() {
   const updateNotificationDate = (value: string) => {
     updateTravelHistory((previous) => ({
       ...previous,
-
       notificationDate: value,
     }));
   };

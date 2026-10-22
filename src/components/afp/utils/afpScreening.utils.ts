@@ -3,21 +3,6 @@ import type {
   AFPScreeningStatus,
 } from "../types/afp.types";
 
-/**
- * Determines whether the answers satisfy the AFP form-screening rule.
- *
- * This is NOT a final AFP diagnosis or laboratory classification.
- *
- * Not eligible if:
- * - Question 1 = No
- * - Question 2 = No
- * - Question 3 = No
- * - Question 5 = Yes
- * - Question 6 = Yes
- *
- * Pending means the required screening questions have not all
- * been answered yet.
- */
 export function getAFPScreeningStatus(
   clinicalInformation: AFPClinicalInformation,
 ): AFPScreeningStatus {

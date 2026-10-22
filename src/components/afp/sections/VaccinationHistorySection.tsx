@@ -4,22 +4,15 @@ import {
   Select,
   type SelectChangeEvent,
 } from "@mui/material";
-
 import DateField from "../fields/DateField";
-
 import SelectField from "../fields/SelectField";
-
 import ToggleSwitch from "../fields/ToggleSwitch";
-
 import YesNoUnknownField from "../fields/YesNoUnknownField";
-
 import { useAFPForm } from "../context/AFPFormContext";
-
 import {
   VACCINATION_DOSE_OPTIONS,
   VACCINATION_RECORD_SOURCE_OPTIONS,
 } from "../constants/afpVaccination";
-
 import type {
   AFPVaccinationDoseEntry,
   AFPVaccinationHistory,
@@ -32,13 +25,9 @@ type DoseEntryField = "opvCampaignDoses" | "opvRoutineDoses" | "ipvDoses";
 interface DoseQuestionProps {
   number: number;
   label: string;
-
   value: AFPVaccinationDoseEntry;
-
   disabled?: boolean;
-
   onSourceChange: (value: VaccinationRecordSource) => void;
-
   onDoseChange: (value: number | null) => void;
 }
 
@@ -49,16 +38,12 @@ function RecordSourceSelect({
   ariaLabel,
 }: {
   value: VaccinationRecordSource;
-
   onChange: (value: VaccinationRecordSource) => void;
-
   disabled?: boolean;
-
   ariaLabel: string;
 }) {
   const handleChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
-
     if (value === "card" || value === "history") {
       onChange(value);
     }
@@ -94,25 +79,18 @@ function RecordSourceSelect({
         }}
         sx={{
           minHeight: 38,
-
           borderRadius: "8px",
-
           backgroundColor: "#ffffff",
-
           fontSize: "0.76rem",
-
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#b9c8d8",
           },
-
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: "#8ca6c1",
           },
-
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2563eb",
           },
-
           "& .MuiSelect-select": {
             py: "8px",
           },
@@ -179,7 +157,6 @@ function DoseQuestion({
         options={VACCINATION_DOSE_OPTIONS}
         onChange={(selected) => {
           const parsed = Number(selected);
-
           onDoseChange(Number.isInteger(parsed) ? parsed : null);
         }}
         placeholder="Dose"
@@ -194,9 +171,7 @@ interface DateQuestionProps {
   number: number;
   label: string;
   value: string;
-
   onChange: (value: string) => void;
-
   disabled?: boolean;
 }
 
@@ -245,15 +220,12 @@ function DateQuestion({
 
 export default function VaccinationHistorySection() {
   const { data, updateData, readOnly } = useAFPForm();
-
   const vaccination = data.vaccinationHistory;
-
   const updateVaccination = (
     updater: (previous: AFPVaccinationHistory) => AFPVaccinationHistory,
   ) => {
     updateData((previous) => ({
       ...previous,
-
       vaccinationHistory: updater(previous.vaccinationHistory),
     }));
   };
@@ -261,40 +233,28 @@ export default function VaccinationHistorySection() {
   const handleAvailabilityChange = (available: boolean) => {
     updateData((previous) => ({
       ...previous,
-
       vaccinationHistory: available
         ? {
             ...previous.vaccinationHistory,
-
             available: true,
           }
         : {
             available: false,
-
             opvCampaignDoses: {
               recordSource: null,
-
               numberOfDoses: null,
             },
-
             opvRoutineDoses: {
               recordSource: null,
-
               numberOfDoses: null,
             },
-
             lastOpvDoseBeforeParalysisDate: "",
-
             ipvDoses: {
               recordSource: null,
-
               numberOfDoses: null,
             },
-
             lastIpvDoseBeforeParalysisDate: "",
-
             opvGivenAfterParalysis: null,
-
             opvAfterParalysisDate: "",
           },
     }));
@@ -306,10 +266,8 @@ export default function VaccinationHistorySection() {
   ) => {
     updateVaccination((previous) => ({
       ...previous,
-
       [field]: {
         ...previous[field],
-
         recordSource: value,
       },
     }));
@@ -318,10 +276,8 @@ export default function VaccinationHistorySection() {
   const updateDoseCount = (field: DoseEntryField, value: number | null) => {
     updateVaccination((previous) => ({
       ...previous,
-
       [field]: {
         ...previous[field],
-
         numberOfDoses: value,
       },
     }));
@@ -337,7 +293,6 @@ export default function VaccinationHistorySection() {
   ) => {
     updateVaccination((previous) => ({
       ...previous,
-
       [field]: value,
     }));
   };
@@ -345,9 +300,7 @@ export default function VaccinationHistorySection() {
   const updateOpvAfterParalysis = (value: YesNoUnknown) => {
     updateVaccination((previous) => ({
       ...previous,
-
       opvGivenAfterParalysis: value,
-
       opvAfterParalysisDate:
         value === "yes" ? previous.opvAfterParalysisDate : "",
     }));

@@ -1,12 +1,9 @@
 import MuscleStrengthSelect from "../clinical-examination/MuscleStrengthSelect";
-
+import { useAFPForm } from "../context/AFPFormContext";
 import {
   LOWER_LIMB_MUSCLE_FIELDS,
   UPPER_LIMB_MUSCLE_FIELDS,
 } from "../constants/afpMuscleStrength";
-
-import { useAFPForm } from "../context/AFPFormContext";
-
 import type {
   AFPLowerLimbMuscleStrength,
   AFPMuscleStrengthPair,
@@ -22,13 +19,9 @@ type LowerLimbField = keyof AFPLowerLimbMuscleStrength;
 
 interface MuscleStrengthRowProps {
   label: string;
-
   value: AFPMuscleStrengthPair;
-
   onRightChange: (value: MuscleScore) => void;
-
   onLeftChange: (value: MuscleScore) => void;
-
   disabled?: boolean;
 }
 
@@ -192,7 +185,6 @@ function MuscleStrengthTable({ title, children }: MuscleStrengthTableProps) {
           Lt
         </span>
       </div>
-
       {children}
     </div>
   );
@@ -205,26 +197,19 @@ export default function MuscleStrengthSection() {
 
   const updateUpperLimb = (
     field: UpperLimbField,
-
     side: MuscleSide,
-
     value: MuscleScore,
   ) => {
     updateData((previous) => ({
       ...previous,
-
       clinicalExamination: {
         ...previous.clinicalExamination,
-
         muscleStrength: {
           ...previous.clinicalExamination.muscleStrength,
-
           upperLimb: {
             ...previous.clinicalExamination.muscleStrength.upperLimb,
-
             [field]: {
               ...previous.clinicalExamination.muscleStrength.upperLimb[field],
-
               [side]: value,
             },
           },
@@ -235,26 +220,19 @@ export default function MuscleStrengthSection() {
 
   const updateLowerLimb = (
     field: LowerLimbField,
-
     side: MuscleSide,
-
     value: MuscleScore,
   ) => {
     updateData((previous) => ({
       ...previous,
-
       clinicalExamination: {
         ...previous.clinicalExamination,
-
         muscleStrength: {
           ...previous.clinicalExamination.muscleStrength,
-
           lowerLimb: {
             ...previous.clinicalExamination.muscleStrength.lowerLimb,
-
             [field]: {
               ...previous.clinicalExamination.muscleStrength.lowerLimb[field],
-
               [side]: value,
             },
           },

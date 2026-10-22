@@ -1,11 +1,7 @@
 import { useId, useRef, useState } from "react";
-
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-
 import { IconButton, InputAdornment, TextField } from "@mui/material";
-
 import FieldError from "./FieldError";
-
 import {
   convertNativeDateToDisplay,
   isFutureDate,
@@ -26,31 +22,23 @@ function getDateError(value: string, noFuture: boolean): string {
   if (!value.trim()) {
     return "";
   }
-
   if (!isValidDateFormat(value)) {
     return "Enter date in DD-MM-YYYY format.";
   }
-
   if (!isValidCalendarDate(value)) {
     return "Enter a valid calendar date.";
   }
-
   if (noFuture && isFutureDate(value)) {
     return "Future dates are not allowed.";
   }
-
   return "";
 }
 
 function getTodayAsNativeDate(): string {
   const today = new Date();
-
   const year = today.getFullYear();
-
   const month = String(today.getMonth() + 1).padStart(2, "0");
-
   const day = String(today.getDate()).padStart(2, "0");
-
   return `${year}-${month}-${day}`;
 }
 
@@ -63,17 +51,12 @@ export default function DateField({
   ariaLabel,
 }: DateFieldProps) {
   const inputId = useId();
-
   const nativeDateRef = useRef<HTMLInputElement>(null);
-
   const [touched, setTouched] = useState(false);
-
   const error = touched ? getDateError(value, noFuture) : "";
-
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value);
   };
-
   const handleNativeDateChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -84,7 +67,6 @@ export default function DateField({
     }
 
     onChange(convertNativeDateToDisplay(nativeValue));
-
     setTouched(true);
   };
 
@@ -120,7 +102,6 @@ export default function DateField({
             maxLength: 10,
             inputMode: "numeric",
           },
-
           input: {
             endAdornment: (
               <InputAdornment position="end">
@@ -147,30 +128,24 @@ export default function DateField({
             xs: "100%",
             sm: 190,
           },
-
           "& .MuiOutlinedInput-root": {
             minHeight: 38,
             borderRadius: "8px",
             backgroundColor: "#ffffff",
-
             "& fieldset": {
               borderColor: "#b9c8d8",
             },
-
             "&:hover fieldset": {
               borderColor: "#8ca6c1",
             },
-
             "&.Mui-focused fieldset": {
               borderColor: "#2563eb",
             },
           },
-
           "& input": {
             py: "8px",
             fontSize: "0.78rem",
           },
-
           "& input::placeholder": {
             color: "#94a3b8",
             opacity: 1,

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import type {
+  AFPAdditionalInformation,
   AFPClinicalExamination,
   AFPFormData,
   AFPFormUpdater,
@@ -153,30 +154,20 @@ function createFrontendContactId(): string {
 
 export const createInitialAFPHealthcareContact = () => ({
   id: createFrontendContactId(),
-
   providerName: "",
-
   address: "",
-
   dateCaseVisited: "",
-
   alreadyInNetwork: null,
-
   reportedCase: null,
-
   actionTakenPlanned: "",
 });
 
 export const createInitialAFPPreviousHealthcareContacts =
   (): AFPPreviousHealthcareContacts => ({
     contacts: [createInitialAFPHealthcareContact()],
-
     firstContactCategory: null,
-
     firstContactCategoryOther: "",
-
     additionalComments: "",
-
     suspectedDiagnosis: "",
   });
 
@@ -195,7 +186,18 @@ export const createInitialAFPFormData = (): AFPFormData => ({
   vaccinationHistory: createInitialAFPVaccinationHistory(),
   travelHistory: createInitialAFPTravelHistory(),
   clinicalExamination: createInitialAFPClinicalExamination(),
+  additionalInformation: createInitialAFPAdditionalInformation(),
 });
+
+export const createInitialAFPAdditionalInformation =
+  (): AFPAdditionalInformation => ({
+    searchForAdditionalCases: null,
+    additionalCasesIdentified: null,
+    numberOfAdditionalCases: null,
+    outbreakResponseImmunizationDone: null,
+    numberOfChildrenVaccinated: null,
+    outbreakResponseExplanation: "",
+  });
 
 interface AFPFormContextValue {
   data: AFPFormData;

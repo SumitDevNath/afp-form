@@ -14,25 +14,17 @@ import type { PlantarReflexValue, ReflexScoreCode } from "../types/afp.types";
 
 interface ReflexScoreSelectProps {
   type: "score";
-
   value: ReflexScoreCode;
-
   onChange: (value: ReflexScoreCode) => void;
-
   ariaLabel: string;
-
   disabled?: boolean;
 }
 
 interface PlantarReflexSelectProps {
   type: "plantar";
-
   value: PlantarReflexValue;
-
   onChange: (value: PlantarReflexValue) => void;
-
   ariaLabel: string;
-
   disabled?: boolean;
 }
 
@@ -94,37 +86,24 @@ export default function ReflexSelect(props: ReflexSelectProps) {
         }}
         sx={{
           height: 38,
-
           borderRadius: "7px",
-
           backgroundColor: "#ffffff",
-
           fontSize: "0.72rem",
-
           "& .MuiSelect-select": {
             display: "flex",
-
             alignItems: "center",
-
             py: "7px",
-
             pr: "30px !important",
-
             overflow: "hidden",
-
             whiteSpace: "nowrap",
-
             textOverflow: "ellipsis",
           },
-
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#334155",
           },
-
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: "#334155",
           },
-
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2563eb",
           },
@@ -134,12 +113,9 @@ export default function ReflexSelect(props: ReflexSelectProps) {
             paper: {
               sx: {
                 maxWidth: 420,
-
                 "& .MuiMenuItem-root": {
                   whiteSpace: "normal",
-
                   fontSize: "0.78rem",
-
                   lineHeight: 1.4,
                 },
               },

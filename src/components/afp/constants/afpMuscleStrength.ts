@@ -2,7 +2,6 @@ import type { MuscleScore } from "../types/afp.types";
 
 export interface MuscleStrengthOption {
   value: Exclude<MuscleScore, null>;
-
   label: string;
 }
 

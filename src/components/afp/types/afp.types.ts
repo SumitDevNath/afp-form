@@ -2,6 +2,8 @@ export type YesNo = "yes" | "no" | null;
 
 export type YesNoUnknown = "yes" | "no" | "unknown" | null;
 
+export type YesNoPending = "yes" | "no" | "pending" | null;
+
 export type AFPScreeningStatus = "pending" | "eligible" | "not_eligible";
 
 export type AFPParalysisSite =
@@ -54,51 +56,34 @@ export interface AFPHealthFacilityDetails {
 export interface AFPSignsSymptoms {
   feverWhenParalysisBegan: YesNoUnknown;
   musclePainWhenParalysisBegan: YesNoUnknown;
-
   siteOfParalysis: AFPParalysisSite[];
-
   otherParalysisSite: string;
-
   paralysisAsymmetric: YesNoUnknown;
-
   paralysisMovedUpward: YesNoUnknown;
-
   sensationPresentAtParalysisSite: YesNoUnknown;
-
   childAtHealthFacility: YesNoUnknown;
-
   healthFacility: AFPHealthFacilityDetails;
 }
 
 export interface AFPVaccinationDoseEntry {
   recordSource: VaccinationRecordSource;
-
   numberOfDoses: number | null;
 }
 
 export interface AFPVaccinationHistory {
   available: boolean;
-
   opvCampaignDoses: AFPVaccinationDoseEntry;
-
   opvRoutineDoses: AFPVaccinationDoseEntry;
-
   lastOpvDoseBeforeParalysisDate: string;
-
   ipvDoses: AFPVaccinationDoseEntry;
-
   lastIpvDoseBeforeParalysisDate: string;
-
   opvGivenAfterParalysis: YesNoUnknown;
-
   opvAfterParalysisDate: string;
 }
 
 export interface AFPTravelHistory {
   travelOutsideAreaLast30Days: boolean;
-
   notifiedToConcernedDsfpSimo: boolean;
-
   notificationDate: string;
 }
 
@@ -116,9 +101,7 @@ export interface AFPReflexScores {
 
 export interface AFPReflexExamination {
   scores: AFPReflexScores;
-
   rightPlantarReflex: PlantarReflexValue;
-
   leftPlantarReflex: PlantarReflexValue;
 }
 
@@ -129,92 +112,69 @@ export interface AFPMuscleStrengthPair {
 
 export interface AFPUpperLimbMuscleStrength {
   flexWrist: AFPMuscleStrengthPair;
-
   extendWrist: AFPMuscleStrengthPair;
-
   flexElbow: AFPMuscleStrengthPair;
-
   extendElbow: AFPMuscleStrengthPair;
-
   flexShoulder: AFPMuscleStrengthPair;
-
   extendShoulder: AFPMuscleStrengthPair;
-
   handGrip: AFPMuscleStrengthPair;
 }
 
 export interface AFPLowerLimbMuscleStrength {
   flexHip: AFPMuscleStrengthPair;
-
   extendHip: AFPMuscleStrengthPair;
-
   flexKnee: AFPMuscleStrengthPair;
-
   extendKnee: AFPMuscleStrengthPair;
-
   flexAnkle: AFPMuscleStrengthPair;
-
   extendAnkle: AFPMuscleStrengthPair;
 }
 
 export interface AFPMuscleStrength {
   upperLimb: AFPUpperLimbMuscleStrength;
-
   lowerLimb: AFPLowerLimbMuscleStrength;
 }
 
 export interface AFPClinicalExamination {
   reflexes: AFPReflexExamination;
-
   muscleStrength: AFPMuscleStrength;
 }
 
 export interface AFPHealthcareContact {
-  /**
-   * Stable frontend-generated ID.
-   * Not a backend/database identifier.
-   */
   id: string;
-
   providerName: string;
-
   address: string;
-
   dateCaseVisited: string;
-
   alreadyInNetwork: YesNoUnknown;
-
   reportedCase: YesNo;
-
   actionTakenPlanned: string;
 }
 
 export interface AFPPreviousHealthcareContacts {
   contacts: AFPHealthcareContact[];
-
   firstContactCategory: AFPFirstContactCategory;
-
   firstContactCategoryOther: string;
-
   additionalComments: string;
-
   suspectedDiagnosis: string;
+}
+
+export interface AFPAdditionalInformation {
+  searchForAdditionalCases: YesNoPending;
+  additionalCasesIdentified: YesNo;
+  numberOfAdditionalCases: number | null;
+  outbreakResponseImmunizationDone: YesNoPending;
+  numberOfChildrenVaccinated: number | null;
+  outbreakResponseExplanation: string;
 }
 
 export interface AFPFormData {
   clinicalInformation: AFPClinicalInformation;
-
   screeningDiagnosis: string;
-
   signsSymptoms: AFPSignsSymptoms;
-
   vaccinationHistory: AFPVaccinationHistory;
-
   travelHistory: AFPTravelHistory;
-
   clinicalExamination: AFPClinicalExamination;
-
   previousHealthcareContacts: AFPPreviousHealthcareContacts;
+  additionalInformation: AFPAdditionalInformation;
 }
 
 export interface AFPFacilityOption {
@@ -223,13 +183,7 @@ export interface AFPFacilityOption {
 }
 
 export interface AFPSuspectedDiagnosisOption {
-  /**
-   * Frontend-configured value only.
-   * Backend mapping is deliberately
-   * outside the AFP module.
-   */
   value: string;
-
   label: string;
 }
 
@@ -237,12 +191,8 @@ export type AFPFormUpdater = (previous: AFPFormData) => AFPFormData;
 
 export interface AFPInvestigationFormProps {
   value?: AFPFormData;
-
   onChange?: (data: AFPFormData) => void;
-
   readOnly?: boolean;
-
   facilityOptions?: AFPFacilityOption[];
-
   suspectedDiagnosisOptions?: AFPSuspectedDiagnosisOption[];
 }
