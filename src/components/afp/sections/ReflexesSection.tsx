@@ -14,6 +14,10 @@ import type {
 type ReflexScoreField = keyof AFPReflexScores;
 type PlantarField = "rightPlantarReflex" | "leftPlantarReflex";
 
+// Switch between "mui" and "svg" to compare drawing implementations.
+// Both modes use the same body coordinates and reflex markers.
+const DIAGRAM_RENDERER: "mui" | "svg" = "mui";
+
 type ReflexFieldProps = {
   label: string;
   ariaLabel?: string;
@@ -207,7 +211,10 @@ export default function ReflexesSection() {
             height: REFLEX_DIAGRAM_LAYOUT.height,
           }}
         >
-          <ReflexBodyDiagram className="h-full w-full" />
+          <ReflexBodyDiagram
+            className="h-full w-full"
+            renderer={DIAGRAM_RENDERER}
+          />
         </div>
 
         {/* REFLEX SCORES */}
@@ -253,49 +260,66 @@ export default function ReflexesSection() {
         ))}
       </div>
 
-      {/* MOBILE LAYOUT */}
-      <div className="space-y-6 md:hidden">
-        {sides.map((side, index) => (
-          <div
-            key={side.heading}
-            className={
-              index === 1 ? "border-t border-[#dbe6f1] pt-5" : undefined
-            }
-          >
-            <h4 className="mb-3 text-sm font-bold text-[#173b69]">
-              {side.heading}
-            </h4>
-
-            <div className="space-y-3">
-              {/* REFLEX SCORES */}
-              {reflexQuestions.map((question) => {
-                const field = question[side.scoreKey];
-
-                return (
-                  <ReflexField
-                    key={field}
-                    type="score"
-                    label={question.label}
-                    value={reflexes.scores[field]}
-                    onChange={(value) => updateScore(field, value)}
-                    disabled={readOnly}
-                  />
-                );
-              })}
-
-              {/* PLANTAR REFLEX */}
-              <ReflexField
-                type="plantar"
-                label="Plantar Reflex"
-                value={reflexes[side.plantarKey]}
-                onChange={(value) =>
-                  updatePlantarReflex(side.plantarKey, value)
-                }
-                disabled={readOnly}
-              />
-            </div>
+      {/* MOBILE: RESPONSIVE INFANT DIAGRAM + EXISTING SCORE LIST */}
+      <div className="md:hidden">
+        <div className="mx-auto mb-6 w-full max-w-70">
+          <div className="mb-2 flex justify-between">
+            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+              RT
+            </span>
+            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+              LT
+            </span>
           </div>
-        ))}
+          <ReflexBodyDiagram
+            className="h-auto w-full"
+            renderer={DIAGRAM_RENDERER}
+          />
+        </div>
+
+        <div className="space-y-6">
+          {sides.map((side, index) => (
+            <div
+              key={side.heading}
+              className={
+                index === 1 ? "border-t border-[#dbe6f1] pt-5" : undefined
+              }
+            >
+              <h4 className="mb-3 text-sm font-bold text-[#173b69]">
+                {side.heading}
+              </h4>
+
+              <div className="space-y-3">
+                {/* REFLEX SCORES */}
+                {reflexQuestions.map((question) => {
+                  const field = question[side.scoreKey];
+
+                  return (
+                    <ReflexField
+                      key={field}
+                      type="score"
+                      label={question.label}
+                      value={reflexes.scores[field]}
+                      onChange={(value) => updateScore(field, value)}
+                      disabled={readOnly}
+                    />
+                  );
+                })}
+
+                {/* PLANTAR REFLEX */}
+                <ReflexField
+                  type="plantar"
+                  label="Plantar Reflex"
+                  value={reflexes[side.plantarKey]}
+                  onChange={(value) =>
+                    updatePlantarReflex(side.plantarKey, value)
+                  }
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
