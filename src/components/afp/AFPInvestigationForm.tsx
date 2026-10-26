@@ -1,9 +1,8 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
 import AdditionalInformationSection from "./sections/AdditionalInformationSection";
+import ClinicalExaminationSection from "./sections/ClinicalExaminationSection";
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
-import MuscleStrengthSection from "./sections/MuscleStrengthSection";
 import PreviousHealthcareContactsSection from "./sections/PreviousHealthcareContactsSection";
-import ReflexesSection from "./sections/ReflexesSection";
 import SignsSymptomsSection from "./sections/SignsSymptomsSection";
 import TravelHistorySection from "./sections/TravelHistorySection";
 import VaccinationHistorySection from "./sections/VaccinationHistorySection";
@@ -53,8 +52,7 @@ function AFPFormContent({
           <SignsSymptomsSection facilityOptions={facilityOptions} />
           <VaccinationHistorySection />
           <TravelHistorySection />
-          <ReflexesSection />
-          <MuscleStrengthSection />
+          <ClinicalExaminationSection />
           <PreviousHealthcareContactsSection
             suspectedDiagnosisOptions={suspectedDiagnosisOptions}
           />

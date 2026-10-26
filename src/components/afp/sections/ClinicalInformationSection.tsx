@@ -6,8 +6,8 @@ import {
   createInitialAFPVaccinationHistory,
   createInitialAFPTravelHistory,
   createInitialAFPClinicalExamination,
-  useAFPForm,
   createInitialAFPAdditionalInformation,
+  useAFPForm,
 } from "../context/AFPFormContext";
 import type { AFPClinicalInformation, YesNo } from "../types/afp.types";
 import { getAFPScreeningStatus } from "../utils/afpScreening.utils";
@@ -19,6 +19,12 @@ type YesNoClinicalField =
   | "paralysisCausedByInjury"
   | "paralysisPresentAtBirth";
 
+interface ClinicalQuestion {
+  number: number;
+  label: string;
+  field: YesNoClinicalField;
+}
+
 interface ClinicalYesNoQuestionProps {
   number: number;
   label: string;
@@ -27,6 +33,52 @@ interface ClinicalYesNoQuestionProps {
   disabled?: boolean;
 }
 
+interface ClinicalDateQuestionProps {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+// Question configurations
+const leftQuestions: ClinicalQuestion[] = [
+  {
+    number: 1,
+    label: "Is or was paralysis present?",
+    field: "paralysisPresent",
+  },
+  {
+    number: 2,
+    label: "Is the paralysis flaccid (floppy)?",
+    field: "paralysisFlaccid",
+  },
+  {
+    number: 3,
+    label: "Did paralysis occur suddenly?",
+    field: "paralysisSuddenOnset",
+  },
+];
+
+const rightQuestions: ClinicalQuestion[] = [
+  {
+    number: 5,
+    label: "Was paralysis caused by injury?",
+    field: "paralysisCausedByInjury",
+  },
+  {
+    number: 6,
+    label: "Was paralysis present at birth?",
+    field: "paralysisPresentAtBirth",
+  },
+];
+
+// Shared styling
+const questionRowClass =
+  "grid gap-3 border-b border-[#dde7f0] py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start";
+
+const questionLabelClass =
+  "m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]";
+
+// Reusable Yes/No question
 function ClinicalYesNoQuestion({
   number,
   label,
@@ -35,25 +87,8 @@ function ClinicalYesNoQuestion({
   disabled = false,
 }: ClinicalYesNoQuestionProps) {
   return (
-    <div
-      className="
-        grid gap-3
-        border-b
-        border-[#dde7f0]
-        py-4
-        sm:grid-cols-[minmax(0,1fr)_auto]
-        sm:items-start
-      "
-    >
-      <p
-        className="
-          m-0 pt-1
-          text-[13px]
-          font-semibold
-          leading-5
-          text-[#173b69]
-        "
-      >
+    <div className={questionRowClass}>
+      <p className={questionLabelClass}>
         {number}. {label}
       </p>
 
@@ -67,37 +102,15 @@ function ClinicalYesNoQuestion({
   );
 }
 
-interface ClinicalDateQuestionProps {
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}
-
+// Date question
 function ClinicalDateQuestion({
   value,
   onChange,
   disabled = false,
 }: ClinicalDateQuestionProps) {
   return (
-    <div
-      className="
-        grid gap-3
-        border-b
-        border-[#dde7f0]
-        py-4
-        sm:grid-cols-[minmax(0,1fr)_190px]
-        sm:items-start
-      "
-    >
-      <p
-        className="
-          m-0 pt-2
-          text-[13px]
-          font-semibold
-          leading-5
-          text-[#173b69]
-        "
-      >
+    <div className="grid gap-3 border-b border-[#dde7f0] py-4 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-start">
+      <p className="m-0 pt-2 text-[13px] font-semibold leading-5 text-[#173b69]">
         4. Date of paralysis onset
       </p>
 
@@ -114,13 +127,12 @@ function ClinicalDateQuestion({
 
 export default function ClinicalInformationSection() {
   const { data, updateData, readOnly } = useAFPForm();
+
   const clinicalInformation = data.clinicalInformation;
   const screeningStatus = getAFPScreeningStatus(clinicalInformation);
-  const updateYesNoField = (
-    field: YesNoClinicalField,
 
-    value: YesNo,
-  ) => {
+  // Update Yes/No answers and dependent sections
+  const updateYesNoField = (field: YesNoClinicalField, value: YesNo) => {
     updateData((previous) => {
       const nextClinicalInformation: AFPClinicalInformation = {
         ...previous.clinicalInformation,
@@ -131,50 +143,41 @@ export default function ClinicalInformationSection() {
         nextClinicalInformation,
       );
 
+      const isEligible = nextScreeningStatus === "eligible";
+      const isNotEligible = nextScreeningStatus === "not_eligible";
+
       return {
         ...previous,
         clinicalInformation: nextClinicalInformation,
-        /*
-         * Diagnosis belongs only to
-         * not-eligible screening.
-         */
-        screeningDiagnosis:
-          nextScreeningStatus === "not_eligible"
-            ? previous.screeningDiagnosis
-            : "",
-        /*
-         * Signs / Symptoms is a
-         * dependent investigation
-         * section.
-         *
-         * If screening is no longer
-         * eligible, hidden data must
-         * not remain in state.
-         */
-        signsSymptoms:
-          nextScreeningStatus === "eligible"
-            ? previous.signsSymptoms
-            : createInitialAFPSignsSymptoms(),
-        vaccinationHistory:
-          nextScreeningStatus === "eligible"
-            ? previous.vaccinationHistory
-            : createInitialAFPVaccinationHistory(),
-        travelHistory:
-          nextScreeningStatus === "eligible"
-            ? previous.travelHistory
-            : createInitialAFPTravelHistory(),
-        clinicalExamination:
-          nextScreeningStatus === "eligible"
-            ? previous.clinicalExamination
-            : createInitialAFPClinicalExamination(),
-        additionalInformation:
-          nextScreeningStatus === "eligible"
-            ? previous.additionalInformation
-            : createInitialAFPAdditionalInformation(),
+
+        // Diagnosis is only retained for not-eligible screening
+        screeningDiagnosis: isNotEligible ? previous.screeningDiagnosis : "",
+
+        // Reset dependent sections when screening is not eligible
+        signsSymptoms: isEligible
+          ? previous.signsSymptoms
+          : createInitialAFPSignsSymptoms(),
+
+        vaccinationHistory: isEligible
+          ? previous.vaccinationHistory
+          : createInitialAFPVaccinationHistory(),
+
+        travelHistory: isEligible
+          ? previous.travelHistory
+          : createInitialAFPTravelHistory(),
+
+        clinicalExamination: isEligible
+          ? previous.clinicalExamination
+          : createInitialAFPClinicalExamination(),
+
+        additionalInformation: isEligible
+          ? previous.additionalInformation
+          : createInitialAFPAdditionalInformation(),
       };
     });
   };
 
+  // Update paralysis onset date
   const updateOnsetDate = (value: string) => {
     updateData((previous) => ({
       ...previous,
@@ -185,6 +188,7 @@ export default function ClinicalInformationSection() {
     }));
   };
 
+  // Update screening diagnosis
   const updateScreeningDiagnosis = (value: string) => {
     updateData((previous) => ({
       ...previous,
@@ -192,75 +196,33 @@ export default function ClinicalInformationSection() {
     }));
   };
 
+  // Render reusable Yes/No questions
+  const renderQuestion = ({ number, label, field }: ClinicalQuestion) => (
+    <ClinicalYesNoQuestion
+      key={field}
+      number={number}
+      label={label}
+      value={clinicalInformation[field]}
+      onChange={(value) => updateYesNoField(field, value)}
+      disabled={readOnly}
+    />
+  );
+
   return (
-    <section
-      className="
-        overflow-hidden
-        rounded-xl
-        border
-        border-[#d4e2ef]
-        bg-white
-        shadow-[0_1px_2px_rgba(15,23,42,0.03)]
-      "
-    >
-      <div
-        className="
-          border-b
-          border-[#e0e8f0]
-          px-5 py-3
-          sm:px-7
-        "
-      >
-        <h2
-          className="
-            m-0
-            text-[18px]
-            font-bold
-            text-[#173b69]
-          "
-        >
+    <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+      {/* SECTION HEADER */}
+      <div className="border-b border-[#e0e8f0] px-5 py-3 sm:px-7">
+        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
           Clinical Information
         </h2>
       </div>
 
-      <div
-        className="
-          grid
-          grid-cols-1
-          px-5 pb-5
-          sm:px-7
-          lg:grid-cols-2
-          lg:gap-x-10
-        "
-      >
-        <div>
-          <ClinicalYesNoQuestion
-            number={1}
-            label="Is or was paralysis present?"
-            value={clinicalInformation.paralysisPresent}
-            onChange={(value) => updateYesNoField("paralysisPresent", value)}
-            disabled={readOnly}
-          />
+      {/* CLINICAL QUESTIONS */}
+      <div className="grid grid-cols-1 px-5 pb-5 sm:px-7 lg:grid-cols-2 lg:gap-x-10">
+        {/* LEFT: QUESTIONS 1–3 */}
+        <div>{leftQuestions.map(renderQuestion)}</div>
 
-          <ClinicalYesNoQuestion
-            number={2}
-            label="Is the paralysis flaccid (floppy)?"
-            value={clinicalInformation.paralysisFlaccid}
-            onChange={(value) => updateYesNoField("paralysisFlaccid", value)}
-            disabled={readOnly}
-          />
-
-          <ClinicalYesNoQuestion
-            number={3}
-            label="Did paralysis occur suddenly?"
-            value={clinicalInformation.paralysisSuddenOnset}
-            onChange={(value) =>
-              updateYesNoField("paralysisSuddenOnset", value)
-            }
-            disabled={readOnly}
-          />
-        </div>
-
+        {/* RIGHT: QUESTIONS 4–6 */}
         <div>
           <ClinicalDateQuestion
             value={clinicalInformation.paralysisOnsetDate}
@@ -268,49 +230,16 @@ export default function ClinicalInformationSection() {
             disabled={readOnly}
           />
 
-          <ClinicalYesNoQuestion
-            number={5}
-            label="Was paralysis caused by injury?"
-            value={clinicalInformation.paralysisCausedByInjury}
-            onChange={(value) =>
-              updateYesNoField("paralysisCausedByInjury", value)
-            }
-            disabled={readOnly}
-          />
-
-          <ClinicalYesNoQuestion
-            number={6}
-            label="Was paralysis present at birth?"
-            value={clinicalInformation.paralysisPresentAtBirth}
-            onChange={(value) =>
-              updateYesNoField("paralysisPresentAtBirth", value)
-            }
-            disabled={readOnly}
-          />
+          {rightQuestions.map(renderQuestion)}
         </div>
       </div>
 
+      {/* SCREENING DIAGNOSIS */}
       {screeningStatus === "not_eligible" && (
-        <div
-          className="
-            mx-5 mb-5
-            rounded-lg
-            border
-            border-[#f0cf8c]
-            bg-[#fff9ec]
-            px-4 py-4
-            sm:mx-7
-            sm:px-5
-          "
-        >
+        <div className="mx-5 mb-5 rounded-lg border border-[#f0cf8c] bg-[#fff9ec] px-4 py-4 sm:mx-7 sm:px-5">
           <label
             htmlFor="afp-screening-diagnosis"
-            className="
-              mb-2 block
-              text-[13px]
-              font-medium
-              text-[#8a5a13]
-            "
+            className="mb-2 block text-[13px] font-medium text-[#8a5a13]"
           >
             Specify the diagnosis, if known:
           </label>

@@ -1,8 +1,4 @@
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import DateField from "../fields/DateField";
-import YesNoField from "../fields/YesNoField";
-import YesNoUnknownField from "../fields/YesNoUnknownField";
-import { FIRST_CONTACT_CATEGORY_OPTIONS } from "../constants/afpHealthcareContacts";
 import {
   Button,
   FormControl,
@@ -11,10 +7,14 @@ import {
   TextField,
   type SelectChangeEvent,
 } from "@mui/material";
+import { FIRST_CONTACT_CATEGORY_OPTIONS } from "../constants/afpHealthcareContacts";
 import {
   createInitialAFPHealthcareContact,
   useAFPForm,
 } from "../context/AFPFormContext";
+import DateField from "../fields/DateField";
+import YesNoField from "../fields/YesNoField";
+import YesNoUnknownField from "../fields/YesNoUnknownField";
 import type {
   AFPFirstContactCategory,
   AFPHealthcareContact,
@@ -30,6 +30,98 @@ interface PreviousHealthcareContactsSectionProps {
 
 type ContactTextField = "providerName" | "address" | "actionTakenPlanned";
 
+type EditableContactField =
+  | ContactTextField
+  | "dateCaseVisited"
+  | "alreadyInNetwork"
+  | "reportedCase";
+
+interface CompactTextFieldProps {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  ariaLabel: string;
+  maxLength?: number;
+  multiline?: boolean;
+  minRows?: number;
+  disabled?: boolean;
+}
+
+interface ContactBlockProps {
+  contact: AFPHealthcareContact;
+  index: number;
+  canRemove: boolean;
+  onRemove: () => void;
+  onTextChange: (field: ContactTextField, value: string) => void;
+  onDateChange: (value: string) => void;
+  onNetworkChange: (value: YesNoUnknown) => void;
+  onReportChange: (value: YesNo) => void;
+  disabled?: boolean;
+  compactLayout?: boolean;
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface OptionsSelectProps {
+  value: string | null;
+  options: readonly SelectOption[];
+  onChange: (event: SelectChangeEvent<string>) => void;
+  placeholder: string;
+  placeholderClassName: string;
+  ariaLabel: string;
+  disabled: boolean;
+  wrapMenuItems?: boolean;
+}
+
+// Shared styling
+const contactLabelClass =
+  "mb-1.5 block text-[12px] font-semibold text-[#173b69]";
+
+const sideLabelClass = "mb-1.5 block text-[12px] font-semibold text-[#617996]";
+
+const selectSx = {
+  minHeight: 40,
+  borderRadius: "7px",
+  backgroundColor: "#ffffff",
+  fontSize: "0.78rem",
+};
+
+// Reusable contact text question configurations
+const textQuestions = [
+  {
+    field: "providerName",
+    label: "1. Name of Hospital/ Doctor/ Health care provider",
+    placeholder: "Enter name",
+    ariaSuffix: "provider name",
+    maxLength: 250,
+  },
+  {
+    field: "address",
+    label: "2. Address",
+    placeholder: "Enter address",
+    ariaSuffix: "address",
+    maxLength: 500,
+  },
+  {
+    field: "actionTakenPlanned",
+    label: "6. Action taken / planned",
+    placeholder: "Enter action taken or planned",
+    ariaSuffix: "action taken or planned",
+    maxLength: 500,
+  },
+] as const satisfies readonly {
+  field: ContactTextField;
+  label: string;
+  placeholder: string;
+  ariaSuffix: string;
+  maxLength: number;
+}[];
+
+// Reusable text input
 function CompactTextField({
   id,
   value,
@@ -40,17 +132,7 @@ function CompactTextField({
   multiline = false,
   minRows,
   disabled = false,
-}: {
-  id?: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  ariaLabel: string;
-  maxLength?: number;
-  multiline?: boolean;
-  minRows?: number;
-  disabled?: boolean;
-}) {
+}: CompactTextFieldProps) {
   return (
     <TextField
       id={id}
@@ -63,22 +145,14 @@ function CompactTextField({
       size="small"
       multiline={multiline}
       minRows={minRows}
-      slotProps={{
-        htmlInput: {
-          maxLength,
-        },
-      }}
+      slotProps={{ htmlInput: { maxLength } }}
       sx={{
         "& .MuiOutlinedInput-root": {
           minHeight: multiline ? undefined : 40,
           borderRadius: "8px",
           backgroundColor: "#ffffff",
         },
-
-        "& input": {
-          fontSize: "0.78rem",
-        },
-
+        "& input": { fontSize: "0.78rem" },
         "& textarea": {
           fontSize: "0.78rem",
           lineHeight: 1.5,
@@ -88,6 +162,88 @@ function CompactTextField({
   );
 }
 
+// Reusable options dropdown
+function OptionsSelect({
+  value,
+  options,
+  onChange,
+  placeholder,
+  placeholderClassName,
+  ariaLabel,
+  disabled,
+  wrapMenuItems = false,
+}: OptionsSelectProps) {
+  return (
+    <FormControl fullWidth size="small" disabled={disabled}>
+      <Select<string>
+        value={value ?? ""}
+        onChange={onChange}
+        displayEmpty
+        aria-label={ariaLabel}
+        renderValue={(selected) =>
+          !selected ? (
+            <span className={placeholderClassName}>{placeholder}</span>
+          ) : (
+            (options.find((option) => option.value === selected)?.label ??
+            selected)
+          )
+        }
+        sx={selectSx}
+        MenuProps={{
+          slotProps: {
+            paper: {
+              sx: {
+                ...(wrapMenuItems ? { maxWidth: 420 } : {}),
+                "& .MuiMenuItem-root": {
+                  ...(wrapMenuItems ? { whiteSpace: "normal" } : {}),
+                  fontSize: "0.8rem",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {options.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+// Reusable contact text question
+function ContactTextQuestion({
+  question,
+  contact,
+  contactNumber,
+  onTextChange,
+  disabled,
+}: {
+  question: (typeof textQuestions)[number];
+  contact: AFPHealthcareContact;
+  contactNumber: number;
+  onTextChange: ContactBlockProps["onTextChange"];
+  disabled: boolean;
+}) {
+  return (
+    <div>
+      <label className={contactLabelClass}>{question.label}</label>
+
+      <CompactTextField
+        value={contact[question.field]}
+        onChange={(value) => onTextChange(question.field, value)}
+        placeholder={question.placeholder}
+        ariaLabel={`Contact ${contactNumber} ${question.ariaSuffix}`}
+        maxLength={question.maxLength}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
+// Individual healthcare contact
 function ContactBlock({
   contact,
   index,
@@ -98,47 +254,14 @@ function ContactBlock({
   onNetworkChange,
   onReportChange,
   disabled = false,
-}: {
-  contact: AFPHealthcareContact;
-  index: number;
-  canRemove: boolean;
-  onRemove: () => void;
-  onTextChange: (field: ContactTextField, value: string) => void;
-  onDateChange: (value: string) => void;
-  onNetworkChange: (value: YesNoUnknown) => void;
-  onReportChange: (value: YesNo) => void;
-  disabled?: boolean;
-}) {
+  compactLayout = false,
+}: ContactBlockProps) {
   const contactNumber = index + 1;
 
   return (
-    <div
-      className="
-        rounded-xl
-        border
-        border-[#d8e5f2]
-        bg-[#f8fbff]
-        p-4
-        sm:p-5
-      "
-    >
-      <div
-        className="
-          mb-4
-          flex
-          items-center
-          justify-between
-          gap-3
-        "
-      >
-        <h4
-          className="
-            m-0
-            text-[14px]
-            font-bold
-            text-[#173b69]
-          "
-        >
+    <div className="w-full min-w-0 rounded-xl border border-[#d8e5f2] bg-[#f8fbff] p-4 sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h4 className="m-0 text-[14px] font-bold text-[#173b69]">
           Contact {contactNumber}
         </h4>
 
@@ -163,77 +286,27 @@ function ContactBlock({
         )}
       </div>
 
-      <div
-        className="
-          space-y-4
-        "
-      >
-        <div>
-          <label
-            className="
-              mb-1.5
-              block
-              text-[12px]
-              font-semibold
-              text-[#173b69]
-            "
-          >
-            1. Name of Hospital/ Doctor/ Health care provider
-          </label>
-
-          <CompactTextField
-            value={contact.providerName}
-            onChange={(value) => onTextChange("providerName", value)}
-            placeholder="Enter name"
-            ariaLabel={`Contact ${contactNumber} provider name`}
-            maxLength={250}
+      <div className="space-y-4">
+        {/* QUESTIONS 1 & 2 */}
+        {textQuestions.slice(0, 2).map((question) => (
+          <ContactTextQuestion
+            key={question.field}
+            question={question}
+            contact={contact}
+            contactNumber={contactNumber}
+            onTextChange={onTextChange}
             disabled={disabled}
           />
-        </div>
+        ))}
 
-        <div>
-          <label
-            className="
-              mb-1.5
-              block
-              text-[12px]
-              font-semibold
-              text-[#173b69]
-            "
-          >
-            2. Address
-          </label>
-
-          <CompactTextField
-            value={contact.address}
-            onChange={(value) => onTextChange("address", value)}
-            placeholder="Enter address"
-            ariaLabel={`Contact ${contactNumber} address`}
-            maxLength={500}
-            disabled={disabled}
-          />
-        </div>
-
+        {/* QUESTIONS 3, 4 & 5 */}
         <div
-          className="
-            grid
-            gap-4
-            md:grid-cols-[170px_minmax(240px,1fr)_minmax(210px,0.9fr)]
-            md:items-start
-          "
+          className={`grid gap-4 md:grid-cols-[170px_minmax(0,240px)_minmax(0,240px)] md:items-start ${
+            compactLayout ? "lg:grid-cols-1 2xl:grid-cols-2" : ""
+          }`}
         >
           <div>
-            <label
-              className="
-                mb-1.5
-                block
-                text-[12px]
-                font-semibold
-                text-[#173b69]
-              "
-            >
-              3. Dates case visited
-            </label>
+            <label className={contactLabelClass}>3. Dates case visited</label>
 
             <DateField
               value={contact.dateCaseVisited}
@@ -245,17 +318,7 @@ function ContactBlock({
           </div>
 
           <div>
-            <label
-              className="
-                mb-1.5
-                block
-                text-[12px]
-                font-semibold
-                text-[#173b69]
-              "
-            >
-              4. Already in network?
-            </label>
+            <label className={contactLabelClass}>4. Already in network?</label>
 
             <YesNoUnknownField
               value={contact.alreadyInNetwork}
@@ -266,15 +329,7 @@ function ContactBlock({
           </div>
 
           <div>
-            <label
-              className="
-                mb-1.5
-                block
-                text-[12px]
-                font-semibold
-                text-[#173b69]
-              "
-            >
+            <label className={contactLabelClass}>
               5. Did they / person report the case?
             </label>
 
@@ -287,28 +342,14 @@ function ContactBlock({
           </div>
         </div>
 
-        <div>
-          <label
-            className="
-              mb-1.5
-              block
-              text-[12px]
-              font-semibold
-              text-[#173b69]
-            "
-          >
-            6. Action taken / planned
-          </label>
-
-          <CompactTextField
-            value={contact.actionTakenPlanned}
-            onChange={(value) => onTextChange("actionTakenPlanned", value)}
-            placeholder="Enter action taken or planned"
-            ariaLabel={`Contact ${contactNumber} action taken or planned`}
-            maxLength={500}
-            disabled={disabled}
-          />
-        </div>
+        {/* QUESTION 6 */}
+        <ContactTextQuestion
+          question={textQuestions[2]}
+          contact={contact}
+          contactNumber={contactNumber}
+          onTextChange={onTextChange}
+          disabled={disabled}
+        />
       </div>
     </div>
   );
@@ -318,7 +359,10 @@ export default function PreviousHealthcareContactsSection({
   suspectedDiagnosisOptions = [],
 }: PreviousHealthcareContactsSectionProps) {
   const { data, updateData, readOnly } = useAFPForm();
+
   const history = data.previousHealthcareContacts;
+
+  // Shared history updater
   const updateHistory = (
     updater: (
       previous: AFPPreviousHealthcareContacts,
@@ -326,14 +370,13 @@ export default function PreviousHealthcareContactsSection({
   ) => {
     updateData((previous) => ({
       ...previous,
-
       previousHealthcareContacts: updater(previous.previousHealthcareContacts),
     }));
   };
 
+  // Update one contact by ID
   const updateContact = (
     id: string,
-
     updater: (contact: AFPHealthcareContact) => AFPHealthcareContact,
   ) => {
     updateHistory((previous) => ({
@@ -344,6 +387,19 @@ export default function PreviousHealthcareContactsSection({
     }));
   };
 
+  // Shared contact field updater
+  const updateContactField = <K extends EditableContactField>(
+    id: string,
+    field: K,
+    value: AFPHealthcareContact[K],
+  ) => {
+    updateContact(id, (contact) => ({
+      ...contact,
+      [field]: value,
+    }));
+  };
+
+  // Add contact
   const addContact = () => {
     updateHistory((previous) => ({
       ...previous,
@@ -351,6 +407,7 @@ export default function PreviousHealthcareContactsSection({
     }));
   };
 
+  // Remove contact (minimum one must remain)
   const removeContact = (id: string) => {
     updateHistory((previous) => {
       if (previous.contacts.length <= 1) {
@@ -359,44 +416,12 @@ export default function PreviousHealthcareContactsSection({
 
       return {
         ...previous,
-
         contacts: previous.contacts.filter((contact) => contact.id !== id),
       };
     });
   };
 
-  const updateContactText = (
-    id: string,
-    field: ContactTextField,
-    value: string,
-  ) => {
-    updateContact(id, (contact) => ({
-      ...contact,
-      [field]: value,
-    }));
-  };
-
-  const updateContactDate = (id: string, value: string) => {
-    updateContact(id, (contact) => ({
-      ...contact,
-      dateCaseVisited: value,
-    }));
-  };
-
-  const updateContactNetwork = (id: string, value: YesNoUnknown) => {
-    updateContact(id, (contact) => ({
-      ...contact,
-      alreadyInNetwork: value,
-    }));
-  };
-
-  const updateContactReport = (id: string, value: YesNo) => {
-    updateContact(id, (contact) => ({
-      ...contact,
-      reportedCase: value,
-    }));
-  };
-
+  // First contact category
   const updateFirstContactCategory = (value: AFPFirstContactCategory) => {
     updateHistory((previous) => ({
       ...previous,
@@ -407,107 +432,44 @@ export default function PreviousHealthcareContactsSection({
   };
 
   const handleCategoryChange = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value;
-    const validOption = FIRST_CONTACT_CATEGORY_OPTIONS.find(
-      (option) => option.value === value,
+    const option = FIRST_CONTACT_CATEGORY_OPTIONS.find(
+      (item) => item.value === event.target.value,
     );
 
-    if (!validOption) {
-      return;
+    if (option) {
+      updateFirstContactCategory(option.value);
     }
-
-    updateFirstContactCategory(validOption.value);
   };
 
+  // Suspected diagnosis
   const handleDiagnosisChange = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value;
-    const validOption = suspectedDiagnosisOptions.find(
-      (option) => option.value === value,
+    const option = suspectedDiagnosisOptions.find(
+      (item) => item.value === event.target.value,
     );
 
-    if (!validOption) {
-      return;
-    }
+    if (!option) return;
 
     updateHistory((previous) => ({
       ...previous,
-      suspectedDiagnosis: validOption.value,
+      suspectedDiagnosis: option.value,
     }));
   };
 
   return (
-    <section
-      className="
-        overflow-hidden
-        rounded-xl
-        border
-        border-[#d4e2ef]
-        bg-white
-        shadow-[0_1px_2px_rgba(15,23,42,0.03)]
-      "
-    >
-      <div
-        className="
-          border-b
-          border-[#dce7f2]
-          px-5
-          py-3
-          sm:px-7
-        "
-      >
-        <h2
-          className="
-            m-0
-            text-[18px]
-            font-bold
-            uppercase
-            leading-6
-            text-[#173b69]
-          "
-        >
+    <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+      {/* SECTION HEADER */}
+      <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
+        <h2 className="m-0 text-[18px] font-bold uppercase leading-6 text-[#173b69]">
           History of Previous Contacts with Health Care Providers After Date of
           Paralysis Onset
         </h2>
       </div>
 
-      <div
-        className="
-          px-5
-          py-5
-          sm:px-7
-        "
-      >
-        <div
-          className="
-            overflow-hidden
-            rounded-xl
-            border
-            border-[#d8e5f2]
-            bg-white
-          "
-        >
-          <div
-            className="
-              flex
-              flex-col
-              gap-3
-              border-b
-              border-[#d8e5f2]
-              bg-[#f8fbff]
-              px-4
-              py-3
-              sm:flex-row
-              sm:items-center
-            "
-          >
-            <h3
-              className="
-                m-0
-                text-[16px]
-                font-bold
-                text-[#2563b8]
-              "
-            >
+      <div className="px-0">
+        {/* CONTACTS CONTAINER */}
+        <div className="mx-0 w-full overflow-hidden border border-[#d8e5f2] bg-white">
+          <div className="flex flex-col gap-3 border-b border-[#d8e5f2] bg-[#f8fbff] px-4 py-3 sm:flex-row sm:items-center">
+            <h3 className="m-0 text-[16px] font-bold text-[#2563b8]">
               CONTACTS
             </h3>
 
@@ -536,12 +498,13 @@ export default function PreviousHealthcareContactsSection({
             </Button>
           </div>
 
+          {/* CONTACT LIST - TWO COLUMN GRID */}
           <div
-            className="
-              space-y-4
-              p-3
-              sm:p-4
-            "
+            className={
+              history.contacts.length > 1
+                ? "grid grid-cols-1 items-start gap-4 p-3 sm:p-4 lg:grid-cols-2"
+                : "space-y-4 p-3 sm:p-4"
+            }
           >
             {history.contacts.map((contact, index) => (
               <ContactBlock
@@ -551,93 +514,41 @@ export default function PreviousHealthcareContactsSection({
                 canRemove={history.contacts.length > 1}
                 onRemove={() => removeContact(contact.id)}
                 onTextChange={(field, value) =>
-                  updateContactText(contact.id, field, value)
+                  updateContactField(contact.id, field, value)
                 }
-                onDateChange={(value) => updateContactDate(contact.id, value)}
+                onDateChange={(value) =>
+                  updateContactField(contact.id, "dateCaseVisited", value)
+                }
                 onNetworkChange={(value) =>
-                  updateContactNetwork(contact.id, value)
+                  updateContactField(contact.id, "alreadyInNetwork", value)
                 }
                 onReportChange={(value) =>
-                  updateContactReport(contact.id, value)
+                  updateContactField(contact.id, "reportedCase", value)
                 }
                 disabled={readOnly}
+                compactLayout={history.contacts.length > 1}
               />
             ))}
           </div>
         </div>
 
         {/* BOTTOM FIELDS */}
-        <div
-          className="
-            mt-5
-            grid
-            gap-5
-            lg:grid-cols-[minmax(220px,0.75fr)_minmax(320px,1.5fr)]
-          "
-        >
+        <div className="m-5 grid gap-5 lg:grid-cols-[minmax(220px,0.75fr)_minmax(320px,1.5fr)]">
+          {/* FIRST CONTACT CATEGORY */}
           <div>
-            <label
-              className="
-                mb-1.5
-                block
-                text-[12px]
-                font-semibold
-                text-[#355b88]
-              "
-            >
+            <label className="mb-1.5 block text-[12px] font-semibold text-[#355b88]">
               Category of the first contact:
             </label>
 
-            <FormControl fullWidth size="small" disabled={readOnly}>
-              <Select
-                value={history.firstContactCategory ?? ""}
-                onChange={handleCategoryChange}
-                displayEmpty
-                aria-label="Category of the first contact"
-                renderValue={(selected) => {
-                  if (!selected) {
-                    return (
-                      <span
-                        className="
-                          text-[#64748b]
-                        "
-                      >
-                        List of the Contacts
-                      </span>
-                    );
-                  }
-
-                  return (
-                    FIRST_CONTACT_CATEGORY_OPTIONS.find(
-                      (option) => option.value === selected,
-                    )?.label ?? selected
-                  );
-                }}
-                sx={{
-                  minHeight: 40,
-                  borderRadius: "7px",
-                  backgroundColor: "#ffffff",
-                  fontSize: "0.78rem",
-                }}
-                MenuProps={{
-                  slotProps: {
-                    paper: {
-                      sx: {
-                        "& .MuiMenuItem-root": {
-                          fontSize: "0.8rem",
-                        },
-                      },
-                    },
-                  },
-                }}
-              >
-                {FIRST_CONTACT_CATEGORY_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <OptionsSelect
+              value={history.firstContactCategory ?? ""}
+              options={FIRST_CONTACT_CATEGORY_OPTIONS}
+              onChange={handleCategoryChange}
+              placeholder="List of the Contacts"
+              placeholderClassName="text-[#64748b]"
+              ariaLabel="Category of the first contact"
+              disabled={readOnly}
+            />
 
             {history.firstContactCategory === "Other" && (
               <div className="mt-3">
@@ -646,7 +557,6 @@ export default function PreviousHealthcareContactsSection({
                   onChange={(value) =>
                     updateHistory((previous) => ({
                       ...previous,
-
                       firstContactCategoryOther: value,
                     }))
                   }
@@ -659,25 +569,15 @@ export default function PreviousHealthcareContactsSection({
             )}
           </div>
 
+          {/* ADDITIONAL COMMENTS */}
           <div>
-            <label
-              className="
-                mb-1.5
-                block
-                text-[12px]
-                font-semibold
-                text-[#617996]
-              "
-            >
-              Additional comments
-            </label>
+            <label className={sideLabelClass}>Additional comments</label>
 
             <CompactTextField
               value={history.additionalComments}
               onChange={(value) =>
                 updateHistory((previous) => ({
                   ...previous,
-
                   additionalComments: value,
                 }))
               }
@@ -689,84 +589,25 @@ export default function PreviousHealthcareContactsSection({
               disabled={readOnly}
             />
           </div>
-        </div>
+          {/* SUSPECTED DIAGNOSIS */}
+          <div className="max-w-[320px]">
+            <label className={sideLabelClass}>Suspected diagnosis</label>
 
-        <div
-          className="
-            mt-5
-            max-w-[320px]
-          "
-        >
-          <label
-            className="
-              mb-1.5
-              block
-              text-[12px]
-              font-semibold
-              text-[#617996]
-            "
-          >
-            Suspected diagnosis
-          </label>
-
-          <FormControl
-            fullWidth
-            size="small"
-            disabled={readOnly || suspectedDiagnosisOptions.length === 0}
-          >
-            <Select
+            <OptionsSelect
               value={history.suspectedDiagnosis}
+              options={suspectedDiagnosisOptions}
               onChange={handleDiagnosisChange}
-              displayEmpty
-              aria-label="Suspected diagnosis"
-              renderValue={(selected) => {
-                if (!selected) {
-                  return (
-                    <span
-                      className="
-                        text-[#475569]
-                      "
-                    >
-                      {suspectedDiagnosisOptions.length > 0
-                        ? "Select from the list of Disease"
-                        : "No diagnosis options configured"}
-                    </span>
-                  );
-                }
-
-                return (
-                  suspectedDiagnosisOptions.find(
-                    (option) => option.value === selected,
-                  )?.label ?? selected
-                );
-              }}
-              sx={{
-                minHeight: 40,
-                borderRadius: "7px",
-                backgroundColor: "#ffffff",
-                fontSize: "0.78rem",
-              }}
-              MenuProps={{
-                slotProps: {
-                  paper: {
-                    sx: {
-                      maxWidth: 420,
-                      "& .MuiMenuItem-root": {
-                        whiteSpace: "normal",
-                        fontSize: "0.8rem",
-                      },
-                    },
-                  },
-                },
-              }}
-            >
-              {suspectedDiagnosisOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              placeholder={
+                suspectedDiagnosisOptions.length > 0
+                  ? "Select from the list of Disease"
+                  : "No diagnosis options configured"
+              }
+              placeholderClassName="text-[#475569]"
+              ariaLabel="Suspected diagnosis"
+              disabled={readOnly || suspectedDiagnosisOptions.length === 0}
+              wrapMenuItems
+            />
+          </div>
         </div>
       </div>
     </section>

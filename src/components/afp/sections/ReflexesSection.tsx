@@ -1,4 +1,8 @@
-import ReflexBodyDiagram from "../clinical-examination/ReflexBodyDiagram";
+import { Fragment } from "react";
+import ReflexBodyDiagram, {
+  REFLEX_ANCHORS,
+  REFLEX_DIAGRAM_LAYOUT,
+} from "../clinical-examination/ReflexBodyDiagram";
 import ReflexSelect from "../clinical-examination/ReflexSelect";
 import { useAFPForm } from "../context/AFPFormContext";
 import type {
@@ -8,54 +12,137 @@ import type {
 } from "../types/afp.types";
 
 type ReflexScoreField = keyof AFPReflexScores;
-interface MobileScoreFieldProps {
+type PlantarField = "rightPlantarReflex" | "leftPlantarReflex";
+
+type ReflexFieldProps = {
   label: string;
-  value: ReflexScoreCode;
-  onChange: (value: ReflexScoreCode) => void;
+  ariaLabel?: string;
   disabled?: boolean;
+  placement?: { side: "left" | "right"; top: number };
+} & (
+  | {
+      type: "score";
+      value: ReflexScoreCode;
+      onChange: (value: ReflexScoreCode) => void;
+    }
+  | {
+      type: "plantar";
+      value: PlantarReflexValue;
+      onChange: (value: PlantarReflexValue) => void;
+    }
+);
+
+// Reusable reflex question configurations
+const reflexQuestions = [
+  {
+    label: "Biceps",
+    anchor: "biceps",
+    rightField: "rightBiceps",
+    leftField: "leftBiceps",
+  },
+  {
+    label: "Brachioradialis",
+    anchor: "brachioradialis",
+    rightField: "rightBrachioradialis",
+    leftField: "leftBrachioradialis",
+  },
+  {
+    label: "Patellar",
+    anchor: "patellar",
+    rightField: "rightPatellar",
+    leftField: "leftPatellar",
+  },
+  {
+    label: "Achilles",
+    anchor: "achilles",
+    rightField: "rightAchilles",
+    leftField: "leftAchilles",
+  },
+] as const satisfies ReadonlyArray<{
+  label: string;
+  anchor: keyof typeof REFLEX_ANCHORS;
+  rightField: ReflexScoreField;
+  leftField: ReflexScoreField;
+}>;
+
+// Right and left side configurations
+const sides = [
+  {
+    heading: "RT",
+    scoreKey: "rightField",
+    plantarKey: "rightPlantarReflex",
+    position: "left",
+  },
+  {
+    heading: "LT",
+    scoreKey: "leftField",
+    plantarKey: "leftPlantarReflex",
+    position: "right",
+  },
+] as const;
+
+// Shared styling
+const attachedLabelClass =
+  "mb-0 block px-2 py-0 text-center text-[10px] font-semibold leading-4 text-[#173b69]";
+
+const mobileLabelClass = "text-[12px] font-semibold text-[#173b69]";
+
+// Preserve original anatomical positioning
+function getDropdownTop(anchorY: number): number {
+  return (
+    REFLEX_DIAGRAM_LAYOUT.diagramTop +
+    anchorY -
+    REFLEX_DIAGRAM_LAYOUT.controlCenterOffset
+  );
 }
 
-function MobileScoreField({
-  label,
-  value,
-  onChange,
-  disabled = false,
-}: MobileScoreFieldProps) {
+// Shared desktop/mobile reflex field
+function ReflexField(props: ReflexFieldProps) {
+  const { label, ariaLabel = label, disabled = false, placement } = props;
+
+  const wrapperClass = placement
+    ? `absolute z-10 w-[30%] max-w-[170px] ${
+        placement.side === "left" ? "left-0" : "right-0"
+      }`
+    : "grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-center";
+
+  const labelClass = placement
+    ? `${attachedLabelClass}${props.type === "plantar" ? " mt-3" : ""}`
+    : mobileLabelClass;
+
   return (
     <div
-      className="
-        grid
-        gap-2
-        sm:grid-cols-[150px_minmax(0,1fr)]
-        sm:items-center
-      "
+      className={wrapperClass}
+      style={placement ? { top: placement.top } : undefined}
     >
-      <label
-        className="
-          text-[12px]
-          font-semibold
-          text-[#173b69]
-        "
-      >
-        {label}
-      </label>
+      <label className={labelClass}>{label}</label>
 
-      <ReflexSelect
-        type="score"
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        ariaLabel={label}
-      />
+      {props.type === "score" ? (
+        <ReflexSelect
+          type="score"
+          value={props.value}
+          onChange={props.onChange}
+          disabled={disabled}
+          ariaLabel={ariaLabel}
+        />
+      ) : (
+        <ReflexSelect
+          type="plantar"
+          value={props.value}
+          onChange={props.onChange}
+          disabled={disabled}
+          ariaLabel={ariaLabel}
+        />
+      )}
     </div>
   );
 }
 
 export default function ReflexesSection() {
   const { data, updateData, readOnly } = useAFPForm();
-
   const reflexes = data.clinicalExamination.reflexes;
 
+  // Update reflex score
   const updateScore = (field: ReflexScoreField, value: ReflexScoreCode) => {
     updateData((previous) => ({
       ...previous,
@@ -72,9 +159,9 @@ export default function ReflexesSection() {
     }));
   };
 
+  // Update plantar reflex
   const updatePlantarReflex = (
-    side: "rightPlantarReflex" | "leftPlantarReflex",
-
+    side: PlantarField,
     value: PlantarReflexValue,
   ) => {
     updateData((previous) => ({
@@ -90,466 +177,126 @@ export default function ReflexesSection() {
   };
 
   return (
-    <section
-      className="
-        overflow-hidden
-        rounded-xl
-        border
-        border-[#d4e2ef]
-        bg-white
-        shadow-[0_1px_2px_rgba(15,23,42,0.03)]
-      "
-    >
-      <div
-        className="
-          border-b
-          border-[#dce7f2]
-          px-5
-          py-3
-          sm:px-7
-        "
-      >
-        <h2
-          className="
-            m-0
-            text-[18px]
-            font-bold
-            text-[#173b69]
-          "
-        >
-          Clinical Examination
-        </h2>
-      </div>
+    <div className="min-w-0 rounded-xl border border-[#d9e5f1] bg-[#f8fbff] p-4 sm:p-5">
+      <h3 className="m-0 mb-4 text-[16px] font-bold text-[#173b69]">
+        Reflexes
+      </h3>
 
+      {/* DESKTOP/TABLET ANATOMICAL LAYOUT */}
       <div
-        className="
-          px-5
-          py-5
-          sm:px-7
-        "
+        className="relative mx-auto hidden w-full max-w-190 md:block"
+        style={{
+          height: REFLEX_DIAGRAM_LAYOUT.stageHeight,
+        }}
       >
+        {/* SIDE HEADINGS */}
+        <span className="absolute left-0 top-0 z-20 rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+          RT
+        </span>
+
+        <span className="absolute right-0 top-0 z-20 rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+          LT
+        </span>
+
+        {/* CENTERED INFANT BODY */}
         <div
-          className="
-            rounded-xl
-            border
-            border-[#d9e5f1]
-            bg-[#f8fbff]
-            p-4
-            sm:p-5
-          "
+          className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2"
+          style={{
+            top: REFLEX_DIAGRAM_LAYOUT.diagramTop,
+            width: REFLEX_DIAGRAM_LAYOUT.width,
+            height: REFLEX_DIAGRAM_LAYOUT.height,
+          }}
         >
-          <h3
-            className="
-              m-0
-              mb-4
-              text-[16px]
-              font-bold
-              text-[#173b69]
-            "
-          >
-            Reflexes
-          </h3>
-
-          {/* DESKTOP / TABLET DIAGRAM */}
-          <div
-            className="
-              relative
-              mx-auto
-              hidden
-              min-h-[560px]
-              max-w-[720px]
-              md:block
-            "
-          >
-            <span
-              className="
-                absolute
-                left-[2%]
-                top-[2%]
-                text-[20px]
-                font-medium
-                text-[#111827]
-              "
-            >
-              RT
-            </span>
-
-            <span
-              className="
-                absolute
-                right-[2%]
-                top-[2%]
-                text-[20px]
-                font-medium
-                text-[#111827]
-              "
-            >
-              LT
-            </span>
-
-            <ReflexBodyDiagram
-              className="
-                absolute
-                left-1/2
-                top-3
-                h-[500px]
-                w-[340px]
-                -translate-x-1/2
-              "
-            />
-
-            {/* RT UPPER 1 */}
-            <div
-              className="
-                absolute
-                left-0
-                top-[13%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.rightUpper1}
-                onChange={(value) => updateScore("rightUpper1", value)}
-                disabled={readOnly}
-                ariaLabel="RT reflex score upper position 1"
-              />
-            </div>
-
-            {/* LT UPPER 1 */}
-            <div
-              className="
-                absolute
-                right-0
-                top-[13%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.leftUpper1}
-                onChange={(value) => updateScore("leftUpper1", value)}
-                disabled={readOnly}
-                ariaLabel="LT reflex score upper position 1"
-              />
-            </div>
-
-            {/* RT UPPER 2 */}
-            <div
-              className="
-                absolute
-                left-[13%]
-                top-[34%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.rightUpper2}
-                onChange={(value) => updateScore("rightUpper2", value)}
-                disabled={readOnly}
-                ariaLabel="RT reflex score upper position 2"
-              />
-            </div>
-
-            {/* LT UPPER 2 */}
-            <div
-              className="
-                absolute
-                right-[13%]
-                top-[34%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.leftUpper2}
-                onChange={(value) => updateScore("leftUpper2", value)}
-                disabled={readOnly}
-                ariaLabel="LT reflex score upper position 2"
-              />
-            </div>
-
-            {/* RT LOWER 1 */}
-            <div
-              className="
-                absolute
-                left-[2%]
-                top-[63%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.rightLower1}
-                onChange={(value) => updateScore("rightLower1", value)}
-                disabled={readOnly}
-                ariaLabel="RT reflex score lower position 1"
-              />
-            </div>
-
-            {/* LT LOWER 1 */}
-            <div
-              className="
-                absolute
-                right-[2%]
-                top-[63%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.leftLower1}
-                onChange={(value) => updateScore("leftLower1", value)}
-                disabled={readOnly}
-                ariaLabel="LT reflex score lower position 1"
-              />
-            </div>
-
-            {/* RT LOWER 2 */}
-            <div
-              className="
-                absolute
-                left-[0%]
-                top-[78%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.rightLower2}
-                onChange={(value) => updateScore("rightLower2", value)}
-                disabled={readOnly}
-                ariaLabel="RT reflex score lower position 2"
-              />
-            </div>
-
-            {/* LT LOWER 2 */}
-            <div
-              className="
-                absolute
-                right-[0%]
-                top-[78%]
-                w-[165px]
-              "
-            >
-              <ReflexSelect
-                type="score"
-                value={reflexes.scores.leftLower2}
-                onChange={(value) => updateScore("leftLower2", value)}
-                disabled={readOnly}
-                ariaLabel="LT reflex score lower position 2"
-              />
-            </div>
-
-            {/* RT PLANTAR */}
-            <div
-              className="
-                absolute
-                bottom-0
-                left-0
-                w-[180px]
-              "
-            >
-              <ReflexSelect
-                type="plantar"
-                value={reflexes.rightPlantarReflex}
-                onChange={(value) =>
-                  updatePlantarReflex("rightPlantarReflex", value)
-                }
-                disabled={readOnly}
-                ariaLabel="RT plantar reflex"
-              />
-            </div>
-
-            {/* LT PLANTAR */}
-            <div
-              className="
-                absolute
-                bottom-0
-                right-0
-                w-[180px]
-              "
-            >
-              <ReflexSelect
-                type="plantar"
-                value={reflexes.leftPlantarReflex}
-                onChange={(value) =>
-                  updatePlantarReflex("leftPlantarReflex", value)
-                }
-                disabled={readOnly}
-                ariaLabel="LT plantar reflex"
-              />
-            </div>
-          </div>
-
-          {/* MOBILE */}
-          <div
-            className="
-              space-y-6
-              md:hidden
-            "
-          >
-            <div>
-              <h4
-                className="
-                  mb-3
-                  text-sm
-                  font-bold
-                  text-[#173b69]
-                "
-              >
-                RT
-              </h4>
-
-              <div
-                className="
-                  space-y-3
-                "
-              >
-                <MobileScoreField
-                  label="Upper position 1"
-                  value={reflexes.scores.rightUpper1}
-                  onChange={(value) => updateScore("rightUpper1", value)}
-                  disabled={readOnly}
-                />
-
-                <MobileScoreField
-                  label="Upper position 2"
-                  value={reflexes.scores.rightUpper2}
-                  onChange={(value) => updateScore("rightUpper2", value)}
-                  disabled={readOnly}
-                />
-
-                <MobileScoreField
-                  label="Lower position 1"
-                  value={reflexes.scores.rightLower1}
-                  onChange={(value) => updateScore("rightLower1", value)}
-                  disabled={readOnly}
-                />
-
-                <MobileScoreField
-                  label="Lower position 2"
-                  value={reflexes.scores.rightLower2}
-                  onChange={(value) => updateScore("rightLower2", value)}
-                  disabled={readOnly}
-                />
-
-                <div
-                  className="
-                    grid
-                    gap-2
-                    sm:grid-cols-[150px_minmax(0,1fr)]
-                    sm:items-center
-                  "
-                >
-                  <label
-                    className="
-                      text-[12px]
-                      font-semibold
-                      text-[#173b69]
-                    "
-                  >
-                    Plantar Reflex
-                  </label>
-
-                  <ReflexSelect
-                    type="plantar"
-                    value={reflexes.rightPlantarReflex}
-                    onChange={(value) =>
-                      updatePlantarReflex("rightPlantarReflex", value)
-                    }
-                    disabled={readOnly}
-                    ariaLabel="RT plantar reflex"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="
-                border-t
-                border-[#dbe6f1]
-                pt-5
-              "
-            >
-              <h4
-                className="
-                  mb-3
-                  text-sm
-                  font-bold
-                  text-[#173b69]
-                "
-              >
-                LT
-              </h4>
-
-              <div
-                className="
-                  space-y-3
-                "
-              >
-                <MobileScoreField
-                  label="Upper position 1"
-                  value={reflexes.scores.leftUpper1}
-                  onChange={(value) => updateScore("leftUpper1", value)}
-                  disabled={readOnly}
-                />
-
-                <MobileScoreField
-                  label="Upper position 2"
-                  value={reflexes.scores.leftUpper2}
-                  onChange={(value) => updateScore("leftUpper2", value)}
-                  disabled={readOnly}
-                />
-
-                <MobileScoreField
-                  label="Lower position 1"
-                  value={reflexes.scores.leftLower1}
-                  onChange={(value) => updateScore("leftLower1", value)}
-                  disabled={readOnly}
-                />
-
-                <MobileScoreField
-                  label="Lower position 2"
-                  value={reflexes.scores.leftLower2}
-                  onChange={(value) => updateScore("leftLower2", value)}
-                  disabled={readOnly}
-                />
-
-                <div
-                  className="
-                    grid
-                    gap-2
-                    sm:grid-cols-[150px_minmax(0,1fr)]
-                    sm:items-center
-                  "
-                >
-                  <label
-                    className="
-                      text-[12px]
-                      font-semibold
-                      text-[#173b69]
-                    "
-                  >
-                    Plantar Reflex
-                  </label>
-
-                  <ReflexSelect
-                    type="plantar"
-                    value={reflexes.leftPlantarReflex}
-                    onChange={(value) =>
-                      updatePlantarReflex("leftPlantarReflex", value)
-                    }
-                    disabled={readOnly}
-                    ariaLabel="LT plantar reflex"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <ReflexBodyDiagram className="h-full w-full" />
         </div>
+
+        {/* REFLEX SCORES */}
+        {reflexQuestions.map((question) => (
+          <Fragment key={question.anchor}>
+            {sides.map((side) => {
+              const field = question[side.scoreKey];
+
+              return (
+                <ReflexField
+                  key={side.heading}
+                  type="score"
+                  label={`${side.heading} ${question.label}`}
+                  value={reflexes.scores[field]}
+                  onChange={(value) => updateScore(field, value)}
+                  disabled={readOnly}
+                  ariaLabel={`${side.heading} ${question.label} reflex score`}
+                  placement={{
+                    side: side.position,
+                    top: getDropdownTop(REFLEX_ANCHORS[question.anchor].y),
+                  }}
+                />
+              );
+            })}
+          </Fragment>
+        ))}
+
+        {/* PLANTAR REFLEX */}
+        {sides.map((side) => (
+          <ReflexField
+            key={side.heading}
+            type="plantar"
+            label={`${side.heading} Plantar Reflex`}
+            value={reflexes[side.plantarKey]}
+            onChange={(value) => updatePlantarReflex(side.plantarKey, value)}
+            disabled={readOnly}
+            ariaLabel={`${side.heading} Plantar Reflex`}
+            placement={{
+              side: side.position,
+              top: getDropdownTop(REFLEX_ANCHORS.plantar.y),
+            }}
+          />
+        ))}
       </div>
-    </section>
+
+      {/* MOBILE LAYOUT */}
+      <div className="space-y-6 md:hidden">
+        {sides.map((side, index) => (
+          <div
+            key={side.heading}
+            className={
+              index === 1 ? "border-t border-[#dbe6f1] pt-5" : undefined
+            }
+          >
+            <h4 className="mb-3 text-sm font-bold text-[#173b69]">
+              {side.heading}
+            </h4>
+
+            <div className="space-y-3">
+              {/* REFLEX SCORES */}
+              {reflexQuestions.map((question) => {
+                const field = question[side.scoreKey];
+
+                return (
+                  <ReflexField
+                    key={field}
+                    type="score"
+                    label={question.label}
+                    value={reflexes.scores[field]}
+                    onChange={(value) => updateScore(field, value)}
+                    disabled={readOnly}
+                  />
+                );
+              })}
+
+              {/* PLANTAR REFLEX */}
+              <ReflexField
+                type="plantar"
+                label="Plantar Reflex"
+                value={reflexes[side.plantarKey]}
+                onChange={(value) =>
+                  updatePlantarReflex(side.plantarKey, value)
+                }
+                disabled={readOnly}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

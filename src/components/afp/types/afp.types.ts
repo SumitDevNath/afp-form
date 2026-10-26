@@ -88,15 +88,17 @@ export interface AFPTravelHistory {
 }
 
 export interface AFPReflexScores {
-  rightUpper1: ReflexScoreCode;
-  rightUpper2: ReflexScoreCode;
-  rightLower1: ReflexScoreCode;
-  rightLower2: ReflexScoreCode;
+  rightBiceps: ReflexScoreCode;
+  leftBiceps: ReflexScoreCode;
 
-  leftUpper1: ReflexScoreCode;
-  leftUpper2: ReflexScoreCode;
-  leftLower1: ReflexScoreCode;
-  leftLower2: ReflexScoreCode;
+  rightBrachioradialis: ReflexScoreCode;
+  leftBrachioradialis: ReflexScoreCode;
+
+  rightPatellar: ReflexScoreCode;
+  leftPatellar: ReflexScoreCode;
+
+  rightAchilles: ReflexScoreCode;
+  leftAchilles: ReflexScoreCode;
 }
 
 export interface AFPReflexExamination {

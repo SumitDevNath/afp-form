@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { TextField } from "@mui/material";
 import FieldError from "../fields/FieldError";
-import YesNoField from "../fields/YesNoField";
+import NumberField, { type NumberFieldProps } from "../fields/NumberField";
+import ToggleSwitch from "../fields/ToggleSwitch";
 import YesNoPendingField from "../fields/YesNoPendingField";
 import { useAFPForm } from "../context/AFPFormContext";
 import type {
@@ -10,77 +11,80 @@ import type {
   YesNoPending,
 } from "../types/afp.types";
 
-interface NumberFieldProps {
-  value: number | null;
-  onChange: (value: number | null) => void;
-  ariaLabel: string;
-  disabled?: boolean;
-  errorMessage?: string;
-  onTouched?: () => void;
+interface NumberQuestionRowProps extends NumberFieldProps {
+  label: string;
+  className: string;
 }
 
-function NumberField({
+interface QuestionCardProps {
+  number: number;
+  label: string;
+  value: YesNoPending;
+  onChange: (value: YesNoPending) => void;
+  ariaLabel: string;
+  disabled?: boolean;
+  children?: ReactNode;
+}
+
+const dependentLabelClass = "pt-2 text-[12px] font-semibold text-[#173b69]";
+
+const countRowClass =
+  "grid gap-2 sm:grid-cols-[max-content_140px] sm:items-start";
+
+function NumberQuestionRow({
+  label,
+  className,
+  ...fieldProps
+}: NumberQuestionRowProps) {
+  return (
+    <div className={className}>
+      <label className={dependentLabelClass}>{label}</label>
+
+      <NumberField {...fieldProps} />
+    </div>
+  );
+}
+
+function QuestionCard({
+  number,
+  label,
   value,
   onChange,
   ariaLabel,
   disabled = false,
-  errorMessage,
-  onTouched,
-}: NumberFieldProps) {
+  children,
+}: QuestionCardProps) {
   return (
-    <div>
-      <TextField
-        value={value ?? ""}
-        onChange={(event) => {
-          const rawValue = event.target.value;
-          if (rawValue === "") {
-            onChange(null);
+    <div className="rounded-xl border border-[#d6e3f0] bg-[#f5f9fd] p-4 sm:p-5">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+        <p className="m-0 pt-2 text-[13px] font-bold leading-5 text-[#173b69]">
+          {number}. {label}
+        </p>
 
-            return;
-          }
-          const parsed = Number(rawValue);
-          if (Number.isInteger(parsed) && parsed >= 0) {
-            onChange(parsed);
-          }
-        }}
-        onBlur={onTouched}
-        disabled={disabled}
-        type="number"
-        size="small"
-        aria-label={ariaLabel}
-        slotProps={{
-          htmlInput: {
-            min: 0,
-            step: 1,
-          },
-        }}
-        sx={{
-          width: {
-            xs: "100%",
-            sm: 140,
-          },
-          "& .MuiOutlinedInput-root": {
-            minHeight: 38,
-            borderRadius: "8px",
-            backgroundColor: "#ffffff",
-          },
-          "& input": {
-            py: "8px",
-            fontSize: "0.8rem",
-          },
-        }}
-      />
-      <FieldError message={errorMessage} />
+        <YesNoPendingField
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          ariaLabel={ariaLabel}
+        />
+      </div>
+
+      {children}
     </div>
   );
 }
 
 export default function AdditionalInformationSection() {
   const { data, updateData, readOnly } = useAFPForm();
+
   const additional = data.additionalInformation;
+
   const [additionalCountTouched, setAdditionalCountTouched] = useState(false);
+
   const [vaccinatedCountTouched, setVaccinatedCountTouched] = useState(false);
+
   const [explanationTouched, setExplanationTouched] = useState(false);
+
   const updateAdditional = (
     updater: (previous: AFPAdditionalInformation) => AFPAdditionalInformation,
   ) => {
@@ -90,6 +94,17 @@ export default function AdditionalInformationSection() {
     }));
   };
 
+  const updateAdditionalField = <K extends keyof AFPAdditionalInformation>(
+    field: K,
+    value: AFPAdditionalInformation[K],
+  ) => {
+    updateAdditional((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
+
+  // Question 1: Search for additional AFP cases
   const updateSearchStatus = (value: YesNoPending) => {
     updateAdditional((previous) => ({
       ...previous,
@@ -105,6 +120,7 @@ export default function AdditionalInformationSection() {
     }
   };
 
+  // Question 1: Additional AFP cases toggle
   const updateAdditionalCasesIdentified = (value: YesNo) => {
     updateAdditional((previous) => ({
       ...previous,
@@ -118,6 +134,7 @@ export default function AdditionalInformationSection() {
     }
   };
 
+  // Question 2: Outbreak response immunization
   const updateOutbreakResponse = (value: YesNoPending) => {
     updateAdditional((previous) => ({
       ...previous,
@@ -137,6 +154,7 @@ export default function AdditionalInformationSection() {
     }
   };
 
+  // Validation
   const additionalCountError =
     additionalCountTouched &&
     additional.additionalCasesIdentified === "yes" &&
@@ -159,273 +177,93 @@ export default function AdditionalInformationSection() {
       : "";
 
   return (
-    <section
-      className="
-        overflow-hidden
-        rounded-xl
-        border
-        border-[#d4e2ef]
-        bg-white
-        shadow-[0_1px_2px_rgba(15,23,42,0.03)]
-      "
-    >
-      <div
-        className="
-          border-b
-          border-[#dce7f2]
-          px-5
-          py-3
-          sm:px-7
-        "
-      >
-        <h2
-          className="
-            m-0
-            text-[18px]
-            font-bold
-            text-[#173b69]
-          "
-        >
+    <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+      {/* SECTION HEADER */}
+      <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
+        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
           Additional Information
         </h2>
       </div>
 
-      <div
-        className="
-          px-5
-          py-5
-          sm:px-7
-        "
-      >
-        <div
-          className="
-            grid
-            grid-cols-1
-            gap-5
-            xl:grid-cols-2
-          "
-        >
+      <div className="px-5 py-5 sm:px-7">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {/* QUESTION 1 */}
-          <div
-            className="
-              rounded-xl
-              border
-              border-[#d6e3f0]
-              bg-[#f5f9fd]
-              p-4
-              sm:p-5
-            "
+          <QuestionCard
+            number={1}
+            label="Search for additional AFP cases?"
+            value={additional.searchForAdditionalCases}
+            onChange={updateSearchStatus}
+            disabled={readOnly}
+            ariaLabel="Search for additional AFP cases"
           >
-            <div
-              className="
-                grid
-                gap-3
-                lg:grid-cols-[minmax(0,1fr)_auto]
-                lg:items-start
-              "
-            >
-              <p
-                className="
-                  m-0
-                  pt-2
-                  text-[13px]
-                  font-bold
-                  leading-5
-                  text-[#173b69]
-                "
-              >
-                1. Search for additional AFP cases?
-              </p>
-
-              <YesNoPendingField
-                value={additional.searchForAdditionalCases}
-                onChange={updateSearchStatus}
-                disabled={readOnly}
-                ariaLabel="Search for additional AFP cases"
-              />
-            </div>
-
             {additional.searchForAdditionalCases === "yes" && (
-              <div
-                className="
-                  mt-4
-                  space-y-4
-                  border-t
-                  border-[#dce6f0]
-                  pt-4
-                "
-              >
-                <div
-                  className="
-                    grid
-                    gap-3
-                    sm:grid-cols-[minmax(0,1fr)_auto]
-                    sm:items-center
-                  "
-                >
-                  <p
-                    className="
-                      m-0
-                      text-[12px]
-                      font-semibold
-                      text-[#173b69]
-                    "
-                  >
-                    If yes, Additional AFP cases identified?
+              <div className="mt-4 w-max rounded-lg border border-[#cbdced] bg-[#eff6ff] px-4 py-4 sm:px-5">
+                {/* ADDITIONAL AFP CASES TOGGLE */}
+                <div className="flex flex-col gap-3 border-b border-[#d6e3f0] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[12px] font-semibold leading-5 text-[#173b69]">
+                    Additional AFP cases identified?
                   </p>
 
-                  <YesNoField
-                    value={additional.additionalCasesIdentified}
-                    onChange={updateAdditionalCasesIdentified}
+                  <ToggleSwitch
+                    checked={additional.additionalCasesIdentified === "yes"}
+                    onChange={(checked) =>
+                      updateAdditionalCasesIdentified(checked ? "yes" : "no")
+                    }
                     disabled={readOnly}
                     ariaLabel="Additional AFP cases identified"
                   />
                 </div>
 
+                {/* CONDITIONAL NUMBER FIELD */}
                 {additional.additionalCasesIdentified === "yes" && (
-                  <div
-                    className="
-                      grid
-                      gap-3
-                      sm:grid-cols-[minmax(0,1fr)_140px]
-                      sm:items-start
-                    "
-                  >
-                    <label
-                      className="
-                        pt-2
-                        text-[12px]
-                        font-semibold
-                        text-[#173b69]
-                      "
-                    >
-                      If yes, How many?
-                    </label>
-
-                    <NumberField
-                      value={additional.numberOfAdditionalCases}
-                      onChange={(value) =>
-                        updateAdditional((previous) => ({
-                          ...previous,
-
-                          numberOfAdditionalCases: value,
-                        }))
-                      }
-                      disabled={readOnly}
-                      ariaLabel="Number of additional AFP cases identified"
-                      onTouched={() => setAdditionalCountTouched(true)}
-                      errorMessage={additionalCountError}
-                    />
-                  </div>
+                  <NumberQuestionRow
+                    className="mt-4 grid gap-5 sm:grid-cols-[max-content_140px] sm:items-start "
+                    label="How many?"
+                    value={additional.numberOfAdditionalCases}
+                    onChange={(value) =>
+                      updateAdditionalField("numberOfAdditionalCases", value)
+                    }
+                    disabled={readOnly}
+                    ariaLabel="Number of additional AFP cases identified"
+                    onTouched={() => setAdditionalCountTouched(true)}
+                    errorMessage={additionalCountError}
+                  />
                 )}
               </div>
             )}
-          </div>
+          </QuestionCard>
 
           {/* QUESTION 2 */}
-          <div
-            className="
-              rounded-xl
-              border
-              border-[#d6e3f0]
-              bg-[#f5f9fd]
-              p-4
-              sm:p-5
-            "
+          <QuestionCard
+            number={2}
+            label="Outbreak response immunization done?"
+            value={additional.outbreakResponseImmunizationDone}
+            onChange={updateOutbreakResponse}
+            disabled={readOnly}
+            ariaLabel="Outbreak response immunization done"
           >
-            <div
-              className="
-                grid
-                gap-3
-                lg:grid-cols-[minmax(0,1fr)_auto]
-                lg:items-start
-              "
-            >
-              <p
-                className="
-                  m-0
-                  pt-2
-                  text-[13px]
-                  font-bold
-                  leading-5
-                  text-[#173b69]
-                "
-              >
-                2. Outbreak response immunization done?
-              </p>
-
-              <YesNoPendingField
-                value={additional.outbreakResponseImmunizationDone}
-                onChange={updateOutbreakResponse}
-                disabled={readOnly}
-                ariaLabel="Outbreak response immunization done"
-              />
-            </div>
-
             {additional.outbreakResponseImmunizationDone === "yes" && (
-              <div
-                className="
-                  mt-4
-                  grid
-                  gap-3
-                  border-t
-                  border-[#dce6f0]
-                  pt-4
-                  sm:grid-cols-[minmax(0,1fr)_140px]
-                  sm:items-start
-                "
-              >
-                <label
-                  className="
-                    pt-2
-                    text-[12px]
-                    font-semibold
-                    text-[#173b69]
-                  "
-                >
-                  If yes, how many children vaccinated?
-                </label>
-
-                <NumberField
-                  value={additional.numberOfChildrenVaccinated}
-                  onChange={(value) =>
-                    updateAdditional((previous) => ({
-                      ...previous,
-
-                      numberOfChildrenVaccinated: value,
-                    }))
-                  }
-                  disabled={readOnly}
-                  ariaLabel="Number of children vaccinated"
-                  onTouched={() => setVaccinatedCountTouched(true)}
-                  errorMessage={vaccinatedCountError}
-                />
-              </div>
+              <NumberQuestionRow
+                className={`mt-4 border-t border-[#dce6f0] pt-4 ${countRowClass}`}
+                label="How many children vaccinated?"
+                value={additional.numberOfChildrenVaccinated}
+                onChange={(value) =>
+                  updateAdditionalField("numberOfChildrenVaccinated", value)
+                }
+                disabled={readOnly}
+                ariaLabel="Number of children vaccinated"
+                onTouched={() => setVaccinatedCountTouched(true)}
+                errorMessage={vaccinatedCountError}
+              />
             )}
 
             {additional.outbreakResponseImmunizationDone === "no" && (
-              <div
-                className="
-                  mt-4
-                  grid
-                  gap-3
-                  border-t
-                  border-[#dce6f0]
-                  pt-4
-                  sm:grid-cols-[120px_minmax(0,1fr)]
-                  sm:items-start
-                "
-              >
+              <div className="mt-4 grid grid-rows-2 gap-3 border-t border-[#dce6f0] pt-4 sm:items-start">
                 <label
                   htmlFor="afp-ori-explanation"
-                  className="
-                    pt-2
-                    text-[12px]
-                    font-semibold
-                    text-[#173b69]
-                  "
+                  className={dependentLabelClass}
                 >
-                  If no, explain
+                  Please explain why outbreak response immunization was not done
                 </label>
 
                 <div>
@@ -433,17 +271,16 @@ export default function AdditionalInformationSection() {
                     id="afp-ori-explanation"
                     value={additional.outbreakResponseExplanation}
                     onChange={(event) =>
-                      updateAdditional((previous) => ({
-                        ...previous,
-
-                        outbreakResponseExplanation: event.target.value,
-                      }))
+                      updateAdditionalField(
+                        "outbreakResponseExplanation",
+                        event.target.value,
+                      )
                     }
                     onBlur={() => setExplanationTouched(true)}
                     disabled={readOnly}
                     fullWidth
                     size="small"
-                    placeholder="Enter explanation"
+                    placeholder="Please Explain"
                     slotProps={{
                       htmlInput: {
                         maxLength: 500,
@@ -455,7 +292,6 @@ export default function AdditionalInformationSection() {
                         borderRadius: "8px",
                         backgroundColor: "#ffffff",
                       },
-
                       "& input": {
                         py: "8px",
                         fontSize: "0.78rem",
@@ -467,30 +303,12 @@ export default function AdditionalInformationSection() {
                 </div>
               </div>
             )}
-          </div>
+          </QuestionCard>
         </div>
 
-        <div
-          className="
-            mt-5
-            rounded-lg
-            border
-            border-[#f0c97d]
-            bg-[#fff8e9]
-            px-4
-            py-3
-            sm:px-5
-          "
-        >
-          <p
-            className="
-              m-0
-              text-[12px]
-              font-semibold
-              leading-5
-              text-[#8a5811]
-            "
-          >
+        {/* PENDING INFORMATION NOTICE */}
+        <div className="mt-5 rounded-lg border border-[#f0c97d] bg-[#fff8e9] px-4 py-3 sm:px-5">
+          <p className="m-0 text-[12px] font-semibold leading-5 text-[#8a5811]">
             If the answer to the question no 1 or 2 is Pending, complete
             activities within 7 days of AFP confirmation and share the updated
             form with EPI HQ.

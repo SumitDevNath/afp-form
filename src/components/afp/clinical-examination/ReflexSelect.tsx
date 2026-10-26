@@ -112,7 +112,7 @@ export default function ReflexSelect(props: ReflexSelectProps) {
           slotProps: {
             paper: {
               sx: {
-                maxWidth: 420,
+                maxWidth: 220,
                 "& .MuiMenuItem-root": {
                   whiteSpace: "normal",
                   fontSize: "0.78rem",

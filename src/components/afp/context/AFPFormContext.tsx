@@ -66,16 +66,18 @@ export const createInitialAFPClinicalExamination =
   (): AFPClinicalExamination => ({
     reflexes: {
       scores: {
-        rightUpper1: null,
-        rightUpper2: null,
-        rightLower1: null,
-        rightLower2: null,
-        leftUpper1: null,
-        leftUpper2: null,
-        leftLower1: null,
-        leftLower2: null,
-      },
+        rightBiceps: null,
+        leftBiceps: null,
 
+        rightBrachioradialis: null,
+        leftBrachioradialis: null,
+
+        rightPatellar: null,
+        leftPatellar: null,
+
+        rightAchilles: null,
+        leftAchilles: null,
+      },
       rightPlantarReflex: null,
       leftPlantarReflex: null,
     },

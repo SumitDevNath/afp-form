@@ -70,7 +70,7 @@ export default function AFPDemoPage() {
             fontSize: "0.875rem",
           }}
         >
-          Case Investigation Form — Frontend Development Demo
+          Case Investigation Form — Frontend Part
         </Typography>
       </Box>
 
