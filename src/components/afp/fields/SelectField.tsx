@@ -17,6 +17,8 @@ interface SelectFieldProps {
   placeholder: string;
   ariaLabel: string;
   disabled?: boolean;
+  error?: boolean;
+  errorId?: string;
 }
 
 export default function SelectField({
@@ -26,19 +28,23 @@ export default function SelectField({
   placeholder,
   ariaLabel,
   disabled = false,
+  error = false,
+  errorId,
 }: SelectFieldProps) {
   const handleChange = (event: SelectChangeEvent<string>) => {
     onChange(event.target.value);
   };
 
   return (
-    <FormControl fullWidth size="small" disabled={disabled}>
+    <FormControl fullWidth size="small" disabled={disabled} error={error}>
       <Select
         value={value}
         onChange={handleChange}
         displayEmpty
+        aria-describedby={error ? errorId : undefined}
         inputProps={{
           "aria-label": ariaLabel,
+          "aria-invalid": error || undefined,
         }}
         renderValue={(selected) => {
           if (!selected) {
@@ -54,15 +60,24 @@ export default function SelectField({
           borderRadius: "8px",
           backgroundColor: "#ffffff",
           fontSize: "0.78rem",
+
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#b9c8d8",
           },
+
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: "#8ca6c1",
           },
+
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2563eb",
           },
+
+          "&.Mui-error .MuiOutlinedInput-notchedOutline, &.Mui-error:hover .MuiOutlinedInput-notchedOutline, &.Mui-error.Mui-focused .MuiOutlinedInput-notchedOutline":
+            {
+              borderColor: "error.main",
+            },
+
           "& .MuiSelect-select": {
             py: "8px",
           },

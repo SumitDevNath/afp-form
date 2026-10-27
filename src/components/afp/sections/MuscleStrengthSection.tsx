@@ -1,10 +1,17 @@
 import type { ReactNode } from "react";
+
+import { FormControl, FormHelperText } from "@mui/material";
+
 import MuscleStrengthSelect from "../clinical-examination/MuscleStrengthSelect";
+
 import { useAFPForm } from "../context/AFPFormContext";
+import { useAFPValidation } from "../validation/AFPValidationContext";
+
 import {
   LOWER_LIMB_MUSCLE_FIELDS,
   UPPER_LIMB_MUSCLE_FIELDS,
 } from "../constants/afpMuscleStrength";
+
 import type {
   AFPLowerLimbMuscleStrength,
   AFPMuscleStrengthPair,
@@ -23,7 +30,13 @@ type MuscleRegionFields = {
 interface MuscleStrengthRowProps {
   label: string;
   value: AFPMuscleStrengthPair;
+
+  // NEW: Validation
+  fieldId: string;
+  errors: Record<string, string>;
+
   onChange: (side: MuscleSide, value: MuscleScore) => void;
+
   disabled?: boolean;
 }
 
@@ -31,6 +44,10 @@ interface MuscleStrengthTableProps {
   title: string;
   children: ReactNode;
 }
+
+// =========================================================
+// EXISTING CONFIGURATION
+// =========================================================
 
 const sides = [
   { key: "right", title: "Rt" },
@@ -46,9 +63,15 @@ const mobileSideLabelClass =
 const desktopSideLabelClass =
   "hidden text-center text-[11px] font-bold uppercase tracking-wide text-[#52677e] sm:block";
 
+// =========================================================
+// MUSCLE STRENGTH ROW — MUI v9 VALIDATION
+// =========================================================
+
 function MuscleStrengthRow({
   label,
   value,
+  fieldId,
+  errors,
   onChange,
   disabled = false,
 }: MuscleStrengthRowProps) {
@@ -62,21 +85,80 @@ function MuscleStrengthRow({
         </span>
       </div>
 
-      {sides.map(({ key, title }) => (
-        <div key={key}>
-          <span className={mobileSideLabelClass}>{title}</span>
+      {sides.map(({ key, title }) => {
+        const inputFieldId = `${fieldId}.${key}`;
 
-          <MuscleStrengthSelect
-            value={value[key]}
-            onChange={(score) => onChange(key, score)}
-            disabled={disabled}
-            ariaLabel={`${label} ${key} muscle strength`}
-          />
-        </div>
-      ))}
+        const errorMessage = errors[inputFieldId] ?? "";
+
+        const hasError = Boolean(errorMessage);
+
+        return (
+          <FormControl
+            key={key}
+            component="div"
+            fullWidth
+            size="small"
+            error={hasError}
+            data-afp-field={inputFieldId}
+            aria-invalid={hasError || undefined}
+            sx={(theme) => ({
+              minWidth: 0,
+
+              // MUI v9 error border for the existing
+              // MuscleStrengthSelect component.
+              ...(hasError && {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: `${theme.palette.error.main} !important`,
+                },
+
+                "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
+                  {
+                    borderColor: `${theme.palette.error.main} !important`,
+                  },
+
+                "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                  {
+                    borderColor: `${theme.palette.error.main} !important`,
+                  },
+              }),
+            })}
+          >
+            <span className={mobileSideLabelClass}>{title}</span>
+
+            {/* EXISTING SELECT — UNCHANGED */}
+            <MuscleStrengthSelect
+              value={value[key]}
+              onChange={(score) => onChange(key, score)}
+              disabled={disabled}
+              ariaLabel={`${label} ${key} muscle strength`}
+            />
+
+            {/* NEW: MUI ERROR MESSAGE */}
+            {hasError && (
+              <FormHelperText
+                id={`${inputFieldId}-error`}
+                role="alert"
+                sx={{
+                  m: 0,
+                  mt: 0.75,
+                  fontSize: "0.69rem",
+                  lineHeight: 1.3,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {errorMessage}
+              </FormHelperText>
+            )}
+          </FormControl>
+        );
+      })}
     </div>
   );
 }
+
+// =========================================================
+// MUSCLE STRENGTH TABLE — UNCHANGED
+// =========================================================
 
 function MuscleStrengthTable({ title, children }: MuscleStrengthTableProps) {
   return (
@@ -98,10 +180,21 @@ function MuscleStrengthTable({ title, children }: MuscleStrengthTableProps) {
   );
 }
 
+// =========================================================
+// MUSCLE STRENGTH SECTION
+// =========================================================
+
 export default function MuscleStrengthSection() {
   const { data, updateData, readOnly } = useAFPForm();
 
+  // NEW: Shared Submit Form validation
+  const { errors } = useAFPValidation();
+
   const muscleStrength = data.clinicalExamination.muscleStrength;
+
+  // =======================================================
+  // EXISTING UPDATE FUNCTION — UNCHANGED
+  // =======================================================
 
   const updateMuscleStrength = <Region extends MuscleRegion>(
     region: Region,
@@ -111,7 +204,9 @@ export default function MuscleStrengthSection() {
   ) => {
     updateData((previous) => {
       const examination = previous.clinicalExamination;
+
       const previousStrength = examination.muscleStrength;
+
       const previousRegion = previousStrength[region];
 
       return {
@@ -133,6 +228,10 @@ export default function MuscleStrengthSection() {
     });
   };
 
+  // =======================================================
+  // SECTION UI
+  // =======================================================
+
   return (
     <div className="h-full min-w-0 self-stretch rounded-xl border border-[#d9e5f1] bg-[#f8fbff] p-4 sm:p-5">
       <h3 className="m-0 mb-4 text-[16px] font-bold text-[#173b69]">
@@ -147,6 +246,8 @@ export default function MuscleStrengthSection() {
               key={key}
               label={label}
               value={muscleStrength.upperLimb[key]}
+              fieldId={`clinicalExamination.muscleStrength.upperLimb.${key}`}
+              errors={errors}
               onChange={(side, score) =>
                 updateMuscleStrength("upperLimb", key, side, score)
               }
@@ -162,6 +263,8 @@ export default function MuscleStrengthSection() {
               key={key}
               label={label}
               value={muscleStrength.lowerLimb[key]}
+              fieldId={`clinicalExamination.muscleStrength.lowerLimb.${key}`}
+              errors={errors}
               onChange={(side, score) =>
                 updateMuscleStrength("lowerLimb", key, side, score)
               }

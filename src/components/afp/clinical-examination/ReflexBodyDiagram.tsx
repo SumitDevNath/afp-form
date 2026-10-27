@@ -7,24 +7,44 @@ export interface ReflexBodyDiagramProps {
 }
 
 export const REFLEX_ANCHORS = {
-  biceps: { label: "Biceps", y: 185, rightX: 120, leftX: 240 },
+  biceps: {
+    label: "Biceps",
+    y: 185,
+    rightX: 120,
+    leftX: 240,
+  },
   brachioradialis: {
     label: "Brachioradialis",
     y: 255,
     rightX: 98,
     leftX: 262,
   },
-  patellar: { label: "Patellar", y: 435, rightX: 145, leftX: 215 },
-  achilles: { label: "Achilles", y: 535, rightX: 139, leftX: 221 },
-  plantar: { label: "Plantar", y: 585, rightX: 110, leftX: 250 },
+  patellar: {
+    label: "Patellar",
+    y: 420,
+    rightX: 145,
+    leftX: 215,
+  },
+  achilles: {
+    label: "Achilles",
+    y: 500,
+    rightX: 139,
+    leftX: 221,
+  },
+  plantar: {
+    label: "Plantar",
+    y: 570,
+    rightX: 110,
+    leftX: 250,
+  },
 } as const;
 
 export const REFLEX_DIAGRAM_LAYOUT = {
-  width: 360,
-  height: 630,
+  width: 450,
+  height: 763,
   diagramTop: 30,
-  stageHeight: 710,
-  controlCenterOffset: 47,
+  stageHeight: 830,
+  controlCenterOffset: 36,
 } as const;
 
 // Anatomical coordinates.
@@ -41,12 +61,12 @@ const BODY_LINES = [
   [268, 275, 295, 325], // Left wrist
   [180, 328, 145, 350], // Right hip
   [180, 328, 215, 350], // Left hip
-  [145, 350, 145, 435], // Right thigh
-  [145, 435, 139, 535], // Right lower leg
-  [215, 350, 215, 435], // Left thigh
-  [215, 435, 221, 535], // Left lower leg
-  [139, 535, 110, 585], // Right foot
-  [221, 535, 250, 585], // Left foot
+  [145, 350, 145, 420], // Right thigh
+  [145, 420, 139, 500], // Right lower leg
+  [215, 350, 215, 420], // Left thigh
+  [215, 420, 221, 500], // Left lower leg
+  [139, 500, 110, 570], // Right foot
+  [221, 500, 250, 570], // Left foot
 ] as const;
 
 export default function ReflexBodyDiagram({
@@ -147,7 +167,7 @@ export default function ReflexBodyDiagram({
   );
 
   const rootProps = {
-    viewBox: "0 0 360 630",
+    viewBox: "0 0 360 610",
     xmlns: "http://www.w3.org/2000/svg",
     className,
     role: "img" as const,

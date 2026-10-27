@@ -1,4 +1,4 @@
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { FormControl, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import type { YesNo } from "../types/afp.types";
 
 interface YesNoFieldProps {
@@ -6,6 +6,8 @@ interface YesNoFieldProps {
   onChange: (value: YesNo) => void;
   disabled?: boolean;
   ariaLabel: string;
+  error?: boolean;
+  errorId?: string;
 }
 
 export default function YesNoField({
@@ -13,6 +15,8 @@ export default function YesNoField({
   onChange,
   disabled = false,
   ariaLabel,
+  error = false,
+  errorId,
 }: YesNoFieldProps) {
   const handleChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -26,55 +30,59 @@ export default function YesNoField({
   };
 
   return (
-    <ToggleButtonGroup
-      exclusive
-      value={value}
-      onChange={handleChange}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      size="small"
-      sx={{
-        gap: "6px",
-        "& .MuiToggleButtonGroup-grouped": {
-          margin: 0,
-          border: "1px solid #cbdcf0 !important",
-          borderRadius: "7px !important",
-        },
-        "& .MuiToggleButton-root": {
-          minWidth: 54,
-          height: 34,
-          px: 1.5,
-          py: 0.5,
-          color: "#64748b",
-          backgroundColor: "#ffffff",
-          fontSize: "0.75rem",
-          fontWeight: 500,
-          lineHeight: 1,
-          textTransform: "none",
-          transition:
-            "background-color 120ms ease, border-color 120ms ease, color 120ms ease",
-          "&:hover": {
+    <FormControl error={error} sx={{ m: 0, minWidth: 0 }}>
+      <ToggleButtonGroup
+        exclusive
+        value={value}
+        onChange={handleChange}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        aria-invalid={error || undefined}
+        aria-describedby={error ? errorId : undefined}
+        size="small"
+        sx={{
+          gap: "6px",
+          "& .MuiToggleButtonGroup-grouped": {
+            margin: 0,
+            border: `1px solid ${error ? "#d32f2f" : "#cbdcf0"} !important`,
+            borderRadius: "7px !important",
+          },
+          "& .MuiToggleButton-root": {
+            minWidth: 54,
+            height: 34,
+            px: 1.5,
+            py: 0.5,
+            color: "#64748b",
             backgroundColor: "#ffffff",
+            fontSize: "0.75rem",
+            fontWeight: 500,
+            lineHeight: 1,
+            textTransform: "none",
+            transition:
+              "background-color 120ms ease, border-color 120ms ease, color 120ms ease",
+            "&:hover": {
+              backgroundColor: "#ffffff",
+            },
+            "&.Mui-selected": {
+              color: "#0756c9",
+              borderColor: "#216fed !important",
+              backgroundColor: "#eef5ff",
+              fontWeight: 600,
+            },
+            "&.Mui-selected:hover": {
+              backgroundColor: "#eef5ff",
+            },
+            "&.Mui-disabled": {
+              color: "#94a3b8",
+              backgroundColor: "#f8fafc",
+            },
           },
-          "&.Mui-selected": {
-            color: "#0756c9",
-            borderColor: "#216fed !important",
-            backgroundColor: "#eef5ff",
-            fontWeight: 600,
-          },
-          "&.Mui-selected:hover": {
-            backgroundColor: "#eef5ff",
-          },
-          "&.Mui-disabled": {
-            color: "#94a3b8",
-            backgroundColor: "#f8fafc",
-          },
-        },
-      }}
-    >
-      <ToggleButton value="yes">Yes</ToggleButton>
+        }}
+      >
+        <ToggleButton value="yes">Yes</ToggleButton>
 
-      <ToggleButton value="no">No</ToggleButton>
-    </ToggleButtonGroup>
+        <ToggleButton value="no">No</ToggleButton>
+      </ToggleButtonGroup>
+    </FormControl>
   );
 }

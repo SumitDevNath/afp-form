@@ -7,14 +7,22 @@ import {
   TextField,
   type SelectChangeEvent,
 } from "@mui/material";
+
 import { FIRST_CONTACT_CATEGORY_OPTIONS } from "../constants/afpHealthcareContacts";
+
 import {
   createInitialAFPHealthcareContact,
   useAFPForm,
 } from "../context/AFPFormContext";
+
 import DateField from "../fields/DateField";
+import ValidatedField from "../fields/ValidatedField";
 import YesNoField from "../fields/YesNoField";
 import YesNoUnknownField from "../fields/YesNoUnknownField";
+
+import { useAFPValidation } from "../validation/AFPValidationContext";
+import type { AFPValidationErrors } from "../validation/afpValidation";
+
 import type {
   AFPFirstContactCategory,
   AFPHealthcareContact,
@@ -46,6 +54,8 @@ interface CompactTextFieldProps {
   multiline?: boolean;
   minRows?: number;
   disabled?: boolean;
+  error?: boolean;
+  errorId?: string;
 }
 
 interface ContactBlockProps {
@@ -57,6 +67,7 @@ interface ContactBlockProps {
   onDateChange: (value: string) => void;
   onNetworkChange: (value: YesNoUnknown) => void;
   onReportChange: (value: YesNo) => void;
+  errors: AFPValidationErrors;
   disabled?: boolean;
   compactLayout?: boolean;
 }
@@ -75,9 +86,14 @@ interface OptionsSelectProps {
   ariaLabel: string;
   disabled: boolean;
   wrapMenuItems?: boolean;
+  error?: boolean;
+  errorId?: string;
 }
 
-// Shared styling
+// =========================================================
+// SHARED STYLING
+// =========================================================
+
 const contactLabelClass =
   "mb-1.5 block text-[12px] font-semibold text-[#173b69]";
 
@@ -90,7 +106,12 @@ const selectSx = {
   fontSize: "0.78rem",
 };
 
-// Reusable contact text question configurations
+const errorSpacing = "[&_.MuiFormHelperText-root]:mt-2!";
+
+// =========================================================
+// TEXT QUESTIONS
+// =========================================================
+
 const textQuestions = [
   {
     field: "providerName",
@@ -121,7 +142,11 @@ const textQuestions = [
   maxLength: number;
 }[];
 
-// Reusable text input
+// =========================================================
+// COMPACT TEXT FIELD
+// Native MUI error property added.
+// =========================================================
+
 function CompactTextField({
   id,
   value,
@@ -132,6 +157,8 @@ function CompactTextField({
   multiline = false,
   minRows,
   disabled = false,
+  error = false,
+  errorId,
 }: CompactTextFieldProps) {
   return (
     <TextField
@@ -141,18 +168,26 @@ function CompactTextField({
       placeholder={placeholder}
       aria-label={ariaLabel}
       disabled={disabled}
+      error={error}
       fullWidth
       size="small"
       multiline={multiline}
       minRows={minRows}
-      slotProps={{ htmlInput: { maxLength } }}
+      slotProps={{
+        htmlInput: {
+          maxLength,
+          "aria-describedby": error ? errorId : undefined,
+        },
+      }}
       sx={{
         "& .MuiOutlinedInput-root": {
           minHeight: multiline ? undefined : 40,
           borderRadius: "8px",
           backgroundColor: "#ffffff",
         },
-        "& input": { fontSize: "0.78rem" },
+        "& input": {
+          fontSize: "0.78rem",
+        },
         "& textarea": {
           fontSize: "0.78rem",
           lineHeight: 1.5,
@@ -162,7 +197,11 @@ function CompactTextField({
   );
 }
 
-// Reusable options dropdown
+// =========================================================
+// OPTIONS SELECT
+// MUI FormControl error support added.
+// =========================================================
+
 function OptionsSelect({
   value,
   options,
@@ -172,14 +211,18 @@ function OptionsSelect({
   ariaLabel,
   disabled,
   wrapMenuItems = false,
+  error = false,
+  errorId,
 }: OptionsSelectProps) {
   return (
-    <FormControl fullWidth size="small" disabled={disabled}>
+    <FormControl fullWidth size="small" disabled={disabled} error={error}>
       <Select<string>
         value={value ?? ""}
         onChange={onChange}
         displayEmpty
         aria-label={ariaLabel}
+        aria-invalid={error || undefined}
+        aria-describedby={error ? errorId : undefined}
         renderValue={(selected) =>
           !selected ? (
             <span className={placeholderClassName}>{placeholder}</span>
@@ -213,22 +256,38 @@ function OptionsSelect({
   );
 }
 
-// Reusable contact text question
+// =========================================================
+// STABLE CONTACT VALIDATION ID
+// =========================================================
+
+const contactFieldId = (contactId: string, field: string) =>
+  `previousHealthcareContacts.contacts.${contactId}.${field}`;
+
+// =========================================================
+// REUSABLE CONTACT TEXT QUESTION
+// =========================================================
+
 function ContactTextQuestion({
   question,
   contact,
   contactNumber,
   onTextChange,
   disabled,
+  errors,
 }: {
   question: (typeof textQuestions)[number];
   contact: AFPHealthcareContact;
   contactNumber: number;
   onTextChange: ContactBlockProps["onTextChange"];
   disabled: boolean;
+  errors: AFPValidationErrors;
 }) {
+  const fieldId = contactFieldId(contact.id, question.field);
+
+  const error = errors[fieldId] ?? "";
+
   return (
-    <div>
+    <ValidatedField fieldId={fieldId} error={error} className={errorSpacing}>
       <label className={contactLabelClass}>{question.label}</label>
 
       <CompactTextField
@@ -238,12 +297,17 @@ function ContactTextQuestion({
         ariaLabel={`Contact ${contactNumber} ${question.ariaSuffix}`}
         maxLength={question.maxLength}
         disabled={disabled}
+        error={Boolean(error)}
+        errorId={`${fieldId}-error`}
       />
-    </div>
+    </ValidatedField>
   );
 }
 
-// Individual healthcare contact
+// =========================================================
+// INDIVIDUAL HEALTHCARE CONTACT
+// =========================================================
+
 function ContactBlock({
   contact,
   index,
@@ -253,10 +317,21 @@ function ContactBlock({
   onDateChange,
   onNetworkChange,
   onReportChange,
+  errors,
   disabled = false,
   compactLayout = false,
 }: ContactBlockProps) {
   const contactNumber = index + 1;
+
+  const dateId = contactFieldId(contact.id, "dateCaseVisited");
+
+  const networkId = contactFieldId(contact.id, "alreadyInNetwork");
+
+  const reportId = contactFieldId(contact.id, "reportedCase");
+
+  const dateError = errors[dateId] ?? "";
+  const networkError = errors[networkId] ?? "";
+  const reportError = errors[reportId] ?? "";
 
   return (
     <div className="w-full min-w-0 rounded-xl border border-[#d8e5f2] bg-[#f8fbff] p-4 sm:p-5">
@@ -288,6 +363,7 @@ function ContactBlock({
 
       <div className="space-y-4">
         {/* QUESTIONS 1 & 2 */}
+
         {textQuestions.slice(0, 2).map((question) => (
           <ContactTextQuestion
             key={question.field}
@@ -296,16 +372,25 @@ function ContactBlock({
             contactNumber={contactNumber}
             onTextChange={onTextChange}
             disabled={disabled}
+            errors={errors}
           />
         ))}
 
         {/* QUESTIONS 3, 4 & 5 */}
+
         <div
           className={`grid gap-4 md:grid-cols-[170px_minmax(0,240px)_minmax(0,240px)] md:items-start ${
             compactLayout ? "lg:grid-cols-1 2xl:grid-cols-2" : ""
           }`}
         >
-          <div>
+          {/* QUESTION 3 — DATE */}
+
+          <ValidatedField
+            fieldId={dateId}
+            error={dateError}
+            showMessage={false}
+            className="min-w-0 [&_.MuiFormHelperText-root]:whitespace-nowrap"
+          >
             <label className={contactLabelClass}>3. Dates case visited</label>
 
             <DateField
@@ -314,10 +399,17 @@ function ContactBlock({
               disabled={disabled}
               noFuture
               ariaLabel={`Contact ${contactNumber} date case visited`}
+              errorMessage={dateError}
             />
-          </div>
+          </ValidatedField>
 
-          <div>
+          {/* QUESTION 4 — NETWORK */}
+
+          <ValidatedField
+            fieldId={networkId}
+            error={networkError}
+            className={`min-w-0 ${errorSpacing}`}
+          >
             <label className={contactLabelClass}>4. Already in network?</label>
 
             <YesNoUnknownField
@@ -325,10 +417,18 @@ function ContactBlock({
               onChange={onNetworkChange}
               disabled={disabled}
               ariaLabel={`Contact ${contactNumber} already in network`}
+              error={Boolean(networkError)}
+              errorId={`${networkId}-error`}
             />
-          </div>
+          </ValidatedField>
 
-          <div>
+          {/* QUESTION 5 — REPORTED CASE */}
+
+          <ValidatedField
+            fieldId={reportId}
+            error={reportError}
+            className={`min-w-0 ${errorSpacing}`}
+          >
             <label className={contactLabelClass}>
               5. Did they / person report the case?
             </label>
@@ -338,31 +438,44 @@ function ContactBlock({
               onChange={onReportChange}
               disabled={disabled}
               ariaLabel={`Contact ${contactNumber} reported the case`}
+              error={Boolean(reportError)}
+              errorId={`${reportId}-error`}
             />
-          </div>
+          </ValidatedField>
         </div>
 
         {/* QUESTION 6 */}
+
         <ContactTextQuestion
           question={textQuestions[2]}
           contact={contact}
           contactNumber={contactNumber}
           onTextChange={onTextChange}
           disabled={disabled}
+          errors={errors}
         />
       </div>
     </div>
   );
 }
 
+// =========================================================
+// PREVIOUS HEALTHCARE CONTACTS SECTION
+// =========================================================
+
 export default function PreviousHealthcareContactsSection({
   suspectedDiagnosisOptions = [],
 }: PreviousHealthcareContactsSectionProps) {
   const { data, updateData, readOnly } = useAFPForm();
 
+  const { errors } = useAFPValidation();
+
   const history = data.previousHealthcareContacts;
 
-  // Shared history updater
+  // =======================================================
+  // EXISTING UPDATE FUNCTIONS — UNCHANGED
+  // =======================================================
+
   const updateHistory = (
     updater: (
       previous: AFPPreviousHealthcareContacts,
@@ -374,7 +487,7 @@ export default function PreviousHealthcareContactsSection({
     }));
   };
 
-  // Update one contact by ID
+  // Update contact by ID
   const updateContact = (
     id: string,
     updater: (contact: AFPHealthcareContact) => AFPHealthcareContact,
@@ -407,7 +520,7 @@ export default function PreviousHealthcareContactsSection({
     }));
   };
 
-  // Remove contact (minimum one must remain)
+  // Remove contact
   const removeContact = (id: string) => {
     updateHistory((previous) => {
       if (previous.contacts.length <= 1) {
@@ -455,9 +568,27 @@ export default function PreviousHealthcareContactsSection({
     }));
   };
 
+  // =======================================================
+  // VALIDATION FIELD IDS
+  // =======================================================
+
+  const categoryId = "previousHealthcareContacts.firstContactCategory";
+
+  const categoryOtherId =
+    "previousHealthcareContacts.firstContactCategoryOther";
+
+  const commentsId = "previousHealthcareContacts.additionalComments";
+
+  const diagnosisId = "previousHealthcareContacts.suspectedDiagnosis";
+
+  // =======================================================
+  // UI — ORIGINAL LAYOUT PRESERVED
+  // =======================================================
+
   return (
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
+
       <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
         <h2 className="m-0 text-[18px] font-bold uppercase leading-6 text-[#173b69]">
           History of Previous Contacts with Health Care Providers After Date of
@@ -467,6 +598,7 @@ export default function PreviousHealthcareContactsSection({
 
       <div className="px-0">
         {/* CONTACTS CONTAINER */}
+
         <div className="mx-0 w-full overflow-hidden border border-[#d8e5f2] bg-white">
           <div className="flex flex-col gap-3 border-b border-[#d8e5f2] bg-[#f8fbff] px-4 py-3 sm:flex-row sm:items-center">
             <h3 className="m-0 text-[16px] font-bold text-[#2563b8]">
@@ -498,7 +630,8 @@ export default function PreviousHealthcareContactsSection({
             </Button>
           </div>
 
-          {/* CONTACT LIST - TWO COLUMN GRID */}
+          {/* CONTACT LIST — RESPONSIVE GRID */}
+
           <div
             className={
               history.contacts.length > 1
@@ -527,31 +660,50 @@ export default function PreviousHealthcareContactsSection({
                 }
                 disabled={readOnly}
                 compactLayout={history.contacts.length > 1}
+                errors={errors}
               />
             ))}
           </div>
         </div>
 
-        {/* BOTTOM FIELDS */}
+        {/* ===================================================
+            BOTTOM FIELDS
+           =================================================== */}
+
         <div className="m-5 grid gap-5 lg:grid-cols-[minmax(220px,0.75fr)_minmax(320px,1.5fr)]">
           {/* FIRST CONTACT CATEGORY */}
-          <div>
-            <label className="mb-1.5 block text-[12px] font-semibold text-[#355b88]">
-              Category of the first contact:
-            </label>
 
-            <OptionsSelect
-              value={history.firstContactCategory ?? ""}
-              options={FIRST_CONTACT_CATEGORY_OPTIONS}
-              onChange={handleCategoryChange}
-              placeholder="List of the Contacts"
-              placeholderClassName="text-[#64748b]"
-              ariaLabel="Category of the first contact"
-              disabled={readOnly}
-            />
+          <div>
+            <ValidatedField
+              fieldId={categoryId}
+              error={errors[categoryId]}
+              className={errorSpacing}
+            >
+              <label className="mb-1.5 block text-[12px] font-semibold text-[#355b88]">
+                Category of the first contact:
+              </label>
+
+              <OptionsSelect
+                value={history.firstContactCategory ?? ""}
+                options={FIRST_CONTACT_CATEGORY_OPTIONS}
+                onChange={handleCategoryChange}
+                placeholder="List of the Contacts"
+                placeholderClassName="text-[#64748b]"
+                ariaLabel="Category of the first contact"
+                disabled={readOnly}
+                error={Boolean(errors[categoryId])}
+                errorId={`${categoryId}-error`}
+              />
+            </ValidatedField>
+
+            {/* OTHER CATEGORY */}
 
             {history.firstContactCategory === "Other" && (
-              <div className="mt-3">
+              <ValidatedField
+                fieldId={categoryOtherId}
+                error={errors[categoryOtherId]}
+                className={`mt-3 ${errorSpacing}`}
+              >
                 <CompactTextField
                   value={history.firstContactCategoryOther}
                   onChange={(value) =>
@@ -564,13 +716,20 @@ export default function PreviousHealthcareContactsSection({
                   ariaLabel="Specify other first contact category"
                   maxLength={150}
                   disabled={readOnly}
+                  error={Boolean(errors[categoryOtherId])}
+                  errorId={`${categoryOtherId}-error`}
                 />
-              </div>
+              </ValidatedField>
             )}
           </div>
 
           {/* ADDITIONAL COMMENTS */}
-          <div>
+
+          <ValidatedField
+            fieldId={commentsId}
+            error={errors[commentsId]}
+            className={errorSpacing}
+          >
             <label className={sideLabelClass}>Additional comments</label>
 
             <CompactTextField
@@ -587,10 +746,18 @@ export default function PreviousHealthcareContactsSection({
               multiline
               minRows={3}
               disabled={readOnly}
+              error={Boolean(errors[commentsId])}
+              errorId={`${commentsId}-error`}
             />
-          </div>
+          </ValidatedField>
+
           {/* SUSPECTED DIAGNOSIS */}
-          <div className="max-w-[320px]">
+
+          <ValidatedField
+            fieldId={diagnosisId}
+            error={errors[diagnosisId]}
+            className={`max-w-[320px] ${errorSpacing}`}
+          >
             <label className={sideLabelClass}>Suspected diagnosis</label>
 
             <OptionsSelect
@@ -606,8 +773,10 @@ export default function PreviousHealthcareContactsSection({
               ariaLabel="Suspected diagnosis"
               disabled={readOnly || suspectedDiagnosisOptions.length === 0}
               wrapMenuItems
+              error={Boolean(errors[diagnosisId])}
+              errorId={`${diagnosisId}-error`}
             />
-          </div>
+          </ValidatedField>
         </div>
       </div>
     </section>

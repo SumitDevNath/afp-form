@@ -1,14 +1,19 @@
-import { TextField } from "@mui/material";
+import { Box, FormControl, TextField } from "@mui/material";
 import CheckboxField from "../fields/CheckboxField";
 import DateField from "../fields/DateField";
 import SelectField from "../fields/SelectField";
 import YesNoUnknownField from "../fields/YesNoUnknownField";
+import ValidatedField from "../fields/ValidatedField";
+
 import {
   AFP_DEMO_FACILITY_OPTIONS,
   AFP_OTHER_FACILITY_OPTION,
   AFP_OTHER_FACILITY_VALUE,
 } from "../constants/afpFacilities";
+
 import { useAFPForm } from "../context/AFPFormContext";
+import { useAFPValidation } from "../validation/AFPValidationContext";
+
 import type {
   AFPFacilityOption,
   AFPParalysisSite,
@@ -39,8 +44,11 @@ interface QuestionRowProps {
   value: YesNoUnknown;
   onChange: (value: YesNoUnknown) => void;
   disabled?: boolean;
+  fieldId: string;
+  error?: string;
 }
 
+// Existing question configuration
 const questions: {
   number: number;
   label: string;
@@ -110,11 +118,16 @@ const otherParalysisTextFieldSx = {
     borderRadius: "8px",
     backgroundColor: "#ffffff",
   },
+
   "& input": {
     py: "8px",
     fontSize: "0.78rem",
   },
 };
+
+// =========================================================
+// REUSABLE QUESTION ROW WITH MUI VALIDATION
+// =========================================================
 
 function QuestionRow({
   number,
@@ -122,27 +135,44 @@ function QuestionRow({
   value,
   onChange,
   disabled = false,
+  fieldId,
+  error = "",
 }: QuestionRowProps) {
   return (
-    <div className="grid gap-3 border-b border-[#dde7f0] py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-      <p className="m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]">
-        {number}. {label}
-      </p>
+    <ValidatedField
+      fieldId={fieldId}
+      error={error}
+      className="border-b border-[#dde7f0]"
+    >
+      <div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <p className="m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]">
+          {number}. {label}
+        </p>
 
-      <YesNoUnknownField
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        ariaLabel={`${number}. ${label}`}
-      />
-    </div>
+        <YesNoUnknownField
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          ariaLabel={`${number}. ${label}`}
+          error={Boolean(error)}
+          errorId={`${fieldId}-error`}
+        />
+      </div>
+    </ValidatedField>
   );
 }
+
+// =========================================================
+// SIGNS / SYMPTOMS SECTION
+// =========================================================
 
 export default function SignsSymptomsSection({
   facilityOptions,
 }: SignsSymptomsSectionProps) {
   const { data, updateData, readOnly } = useAFPForm();
+
+  // NEW: shared submission validation errors
+  const { errors } = useAFPValidation();
 
   const signs = data.signsSymptoms;
   const healthFacility = signs.healthFacility;
@@ -156,6 +186,10 @@ export default function SignsSymptomsSection({
     ...facilities.filter((option) => option.value !== AFP_OTHER_FACILITY_VALUE),
     AFP_OTHER_FACILITY_OPTION,
   ];
+
+  // =========================================================
+  // EXISTING CONTEXT UPDATE FUNCTIONS — UNCHANGED
+  // =========================================================
 
   const updateSigns = (
     updater: (previous: AFPSignsSymptoms) => AFPSignsSymptoms,
@@ -247,12 +281,20 @@ export default function SignsSymptomsSection({
     }));
   };
 
+  // =========================================================
+  // EXISTING CONDITIONAL VISIBILITY
+  // =========================================================
+
   const hasOtherParalysisSite = signs.siteOfParalysis.includes("other");
 
   const showHealthFacilityDetails = signs.childAtHealthFacility === "yes";
 
   const showOtherFacilityName =
     healthFacility.selectedFacilityOption === AFP_OTHER_FACILITY_VALUE;
+
+  // NEW: Date validation error
+  const notificationDateError =
+    errors["signsSymptoms.healthFacility.notificationDate"] ?? "";
 
   return (
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -264,40 +306,70 @@ export default function SignsSymptomsSection({
       </div>
 
       {/* QUESTIONS 1, 2, 4, 5, 6, 7 AND QUESTION 3 */}
-      <div className="grid grid-cols-1 px-5 sm:px-7 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.85fr)] lg:gap-x-7">
-        {/* LEFT SIDE */}
-        <div>
-          {questions.map(({ number, label, field }) => (
-            <QuestionRow
-              key={number}
-              number={number}
-              label={label}
-              value={signs[field]}
-              onChange={(value) => updateYesNoUnknownField(field, value)}
-              disabled={readOnly}
-            />
-          ))}
-        </div>
-
-        {/* QUESTION 3: SITE OF PARALYSIS */}
-        <div className="py-4 lg:border-l lg:border-[#dde7f0] lg:pl-6">
-          <p className="m-0 mb-4 text-[13px] font-semibold text-[#173b69]">
-            3. SITE OF PARALYSIS
-          </p>
-
-          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
-            {paralysisSiteOptions.map((option) => (
-              <CheckboxField
-                key={option.value}
-                label={option.label}
-                checked={signs.siteOfParalysis.includes(option.value)}
-                onChange={(checked) =>
-                  toggleParalysisSite(option.value, checked)
-                }
+      <div className="grid grid-cols-1 px-5 sm:px-7 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.85fr)] lg:grid-rows-[auto_1fr] lg:gap-x-7">
+        {/* LEFT SIDE: QUESTIONS 1, 2, 4, 5, 6, 7 */}
+        {/* QUESTIONS 1 AND 2 */}
+        <div className="lg:col-start-1 lg:row-start-1">
+          {questions
+            .filter(({ number }) => number <= 2)
+            .map(({ number, label, field }) => (
+              <QuestionRow
+                key={number}
+                number={number}
+                label={label}
+                value={signs[field]}
+                onChange={(value) => updateYesNoUnknownField(field, value)}
                 disabled={readOnly}
+                fieldId={`signsSymptoms.${field}`}
+                error={errors[`signsSymptoms.${field}`]}
               />
             ))}
-          </div>
+        </div>
+
+        {/* =====================================================
+            QUESTION 3: SITE OF PARALYSIS
+           ===================================================== */}
+
+        <div className="py-4 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:border-l lg:border-[#dde7f0] lg:pl-6">
+          <ValidatedField
+            fieldId="signsSymptoms.siteOfParalysis"
+            error={errors["signsSymptoms.siteOfParalysis"]}
+          >
+            <FormControl
+              component="fieldset"
+              fullWidth
+              error={Boolean(errors["signsSymptoms.siteOfParalysis"])}
+              sx={{ minWidth: 0 }}
+            >
+              <p className="m-0 mb-4 text-[13px] font-semibold text-[#173b69]">
+                3. SITE OF PARALYSIS
+              </p>
+
+              <Box
+                className="grid grid-cols-2 gap-x-5 gap-y-3"
+                sx={{
+                  outline: errors["signsSymptoms.siteOfParalysis"]
+                    ? "1px solid"
+                    : "none",
+                  outlineColor: "error.main",
+                  outlineOffset: 5,
+                  borderRadius: "4px",
+                }}
+              >
+                {paralysisSiteOptions.map((option) => (
+                  <CheckboxField
+                    key={option.value}
+                    label={option.label}
+                    checked={signs.siteOfParalysis.includes(option.value)}
+                    onChange={(checked) =>
+                      toggleParalysisSite(option.value, checked)
+                    }
+                    disabled={readOnly}
+                  />
+                ))}
+              </Box>
+            </FormControl>
+          </ValidatedField>
 
           {/* OTHER PARALYSIS SITE */}
           <div className="mt-3 flex items-center gap-3">
@@ -311,13 +383,18 @@ export default function SignsSymptomsSection({
             </div>
 
             {hasOtherParalysisSite && (
-              <div className="min-w-0 max-w-65 flex-1">
+              <ValidatedField
+                fieldId="signsSymptoms.otherParalysisSite"
+                error={errors["signsSymptoms.otherParalysisSite"]}
+                className="min-w-0 max-w-65 flex-1"
+              >
                 <TextField
                   value={signs.otherParalysisSite}
                   onChange={(event) =>
                     updateOtherParalysisSite(event.target.value)
                   }
                   disabled={readOnly}
+                  error={Boolean(errors["signsSymptoms.otherParalysisSite"])}
                   size="small"
                   fullWidth
                   placeholder="Specify other"
@@ -329,24 +406,50 @@ export default function SignsSymptomsSection({
                   }}
                   sx={otherParalysisTextFieldSx}
                 />
-              </div>
+              </ValidatedField>
             )}
           </div>
         </div>
+        {/* QUESTIONS 4, 5, 6 AND 7 */}
+        <div className="lg:col-start-1 lg:row-start-2">
+          {questions
+            .filter(({ number }) => number >= 4)
+            .map(({ number, label, field }) => (
+              <QuestionRow
+                key={number}
+                number={number}
+                label={label}
+                value={signs[field]}
+                onChange={(value) => updateYesNoUnknownField(field, value)}
+                disabled={readOnly}
+                fieldId={`signsSymptoms.${field}`}
+                error={errors[`signsSymptoms.${field}`]}
+              />
+            ))}
+        </div>
       </div>
 
-      {/* QUESTION 7 DEPENDENT DETAILS */}
-      {showHealthFacilityDetails && (
-        <div className="mx-5 mb-5 mt-3 rounded-lg border border-[#d6e2ef] bg-[#f1f6fc] px-4 py-3 sm:mx-7">
-          {/* RESPONSIVE FACILITY GRID */}
-          <div className="grid grid-cols-1 gap-y-3 sm:grid-cols-2 sm:gap-x-3 lg:grid-cols-12 lg:gap-x-4 lg:items-start">
-            {/* HEALTH FACILITY */}
-            <div className="min-w-0 sm:col-span-2 lg:order-1 lg:col-span-6">
-              <label className={`${fieldLabelClass} lg:leading-4`}>
-                Select the health facility from the dropdown
-              </label>
+      {/* =====================================================
+          QUESTION 7 DEPENDENT DETAILS
+         ===================================================== */}
 
-              <div className="lg:[&_.MuiFormControl-root]:w-full">
+      {showHealthFacilityDetails && (
+        <div className="size-max mx-5 mb-5 mt-3 rounded-lg border border-[#d6e2ef] bg-[#f1f6fc] px-4 py-3 sm:mx-7">
+          {/* SINGLE RESPONSIVE GRID */}
+          <div className="grid grid-cols-1 gap-y-3 sm:grid-cols-2 sm:gap-x-3 lg:grid-cols-[minmax(0,1fr)_230px_220px] lg:items-start lg:gap-x-5">
+            {/* COLUMN 1: HEALTH FACILITY + OTHER */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              {/* HEALTH FACILITY */}
+              <ValidatedField
+                fieldId="signsSymptoms.healthFacility.selectedFacilityOption"
+                error={
+                  errors["signsSymptoms.healthFacility.selectedFacilityOption"]
+                }
+              >
+                <label className={`${fieldLabelClass} lg:leading-4`}>
+                  Select the health facility from the dropdown
+                </label>
+
                 <SelectField
                   value={healthFacility.selectedFacilityOption}
                   options={facilitySelectOptions}
@@ -354,48 +457,77 @@ export default function SignsSymptomsSection({
                   placeholder="List of health facilities"
                   ariaLabel="Health facility"
                   disabled={readOnly}
+                  error={Boolean(
+                    errors[
+                      "signsSymptoms.healthFacility.selectedFacilityOption"
+                    ],
+                  )}
+                  errorId="signsSymptoms.healthFacility.selectedFacilityOption-error"
                 />
-              </div>
+              </ValidatedField>
+
+              {/* OTHER FACILITY NAME */}
+              {showOtherFacilityName && (
+                <ValidatedField
+                  fieldId="signsSymptoms.healthFacility.otherFacilityName"
+                  error={
+                    errors["signsSymptoms.healthFacility.otherFacilityName"]
+                  }
+                  className="mt-3 min-w-0"
+                >
+                  <label
+                    htmlFor="afp-other-facility-name"
+                    className={fieldLabelClass}
+                  >
+                    Facility name
+                  </label>
+
+                  <TextField
+                    id="afp-other-facility-name"
+                    value={healthFacility.otherFacilityName}
+                    onChange={(event) =>
+                      updateHealthFacilityField(
+                        "otherFacilityName",
+                        event.target.value,
+                      )
+                    }
+                    disabled={readOnly}
+                    error={Boolean(
+                      errors["signsSymptoms.healthFacility.otherFacilityName"],
+                    )}
+                    fullWidth
+                    size="small"
+                    placeholder="Enter health facility name"
+                    slotProps={{
+                      htmlInput: {
+                        maxLength: 200,
+                      },
+                    }}
+                    sx={facilityTextFieldSx}
+                  />
+                </ValidatedField>
+              )}
             </div>
 
-            {/* OTHER FACILITY NAME */}
-            {showOtherFacilityName && (
-              <div className="min-w-0 sm:col-span-2 lg:order-4 lg:col-span-6">
-                <label
-                  htmlFor="afp-other-facility-name"
-                  className={fieldLabelClass}
-                >
-                  Facility name
-                </label>
+            {/* ==========================================
+          COLUMN 2: DATE OF NOTIFICATION
+         ========================================== */}
 
-                <TextField
-                  id="afp-other-facility-name"
-                  value={healthFacility.otherFacilityName}
-                  onChange={(event) =>
-                    updateHealthFacilityField(
-                      "otherFacilityName",
-                      event.target.value,
-                    )
-                  }
-                  disabled={readOnly}
-                  fullWidth
-                  size="small"
-                  placeholder="Enter health facility name"
-                  slotProps={{
-                    htmlInput: { maxLength: 200 },
-                  }}
-                  sx={facilityTextFieldSx}
-                />
-              </div>
-            )}
-
-            {/* DATE OF NOTIFICATION */}
-            <div className="min-w-0 lg:order-2 lg:col-span-3">
+            <ValidatedField
+              fieldId="signsSymptoms.healthFacility.notificationDate"
+              error={notificationDateError}
+              className="min-w-0"
+            >
               <label className={`${fieldLabelClass} lg:leading-4`}>
                 Date of notification
               </label>
 
-              <div className="lg:[&_.MuiFormControl-root]:w-full lg:[&_.MuiTextField-root]:w-full">
+              <div
+                className={`
+            lg:[&_.MuiTextField-root]:max-w-none!
+            ${notificationDateError ? "[&_.MuiFormHelperText-root]:hidden" : ""}
+          `}
+              >
                 <DateField
                   value={healthFacility.notificationDate}
                   onChange={(value) =>
@@ -404,12 +536,20 @@ export default function SignsSymptomsSection({
                   disabled={readOnly}
                   noFuture
                   ariaLabel="Date of notification"
+                  errorMessage={notificationDateError}
                 />
               </div>
-            </div>
+            </ValidatedField>
 
-            {/* MEDICAL RECORD NUMBER */}
-            <div className="min-w-0 lg:order-0 lg:col-span-3">
+            {/* ==========================================
+          COLUMN 3: MEDICAL RECORD
+         ========================================== */}
+
+            <ValidatedField
+              fieldId="signsSymptoms.healthFacility.medicalRecordNumber"
+              error={errors["signsSymptoms.healthFacility.medicalRecordNumber"]}
+              className="min-w-0"
+            >
               <label
                 htmlFor="afp-medical-record-number"
                 className={`${fieldLabelClass} lg:leading-4`}
@@ -427,15 +567,20 @@ export default function SignsSymptomsSection({
                   )
                 }
                 disabled={readOnly}
+                error={Boolean(
+                  errors["signsSymptoms.healthFacility.medicalRecordNumber"],
+                )}
                 fullWidth
                 size="small"
                 placeholder="Enter record number"
                 slotProps={{
-                  htmlInput: { maxLength: 100 },
+                  htmlInput: {
+                    maxLength: 100,
+                  },
                 }}
                 sx={facilityTextFieldSx}
               />
-            </div>
+            </ValidatedField>
           </div>
         </div>
       )}

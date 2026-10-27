@@ -1,12 +1,25 @@
 import FlightOutlinedIcon from "@mui/icons-material/FlightOutlined";
+
 import DateField from "../fields/DateField";
 import ToggleSwitch from "../fields/ToggleSwitch";
+import ValidatedField from "../fields/ValidatedField";
+
 import { useAFPForm } from "../context/AFPFormContext";
+import { useAFPValidation } from "../validation/AFPValidationContext";
+
 import type { AFPTravelHistory } from "../types/afp.types";
 
 export default function TravelHistorySection() {
   const { data, updateData, readOnly } = useAFPForm();
+
+  // NEW: Shared Submit Form validation.
+  const { errors } = useAFPValidation();
+
   const travelHistory = data.travelHistory;
+
+  // =========================================================
+  // EXISTING UPDATE FUNCTIONS — UNCHANGED
+  // =========================================================
 
   // Shared travel history updater
   const updateTravelHistory = (
@@ -50,6 +63,18 @@ export default function TravelHistorySection() {
       notificationDate: value,
     }));
   };
+
+  // =========================================================
+  // NEW: VALIDATION
+  // =========================================================
+
+  const notificationDateFieldId = "travelHistory.notificationDate";
+
+  const notificationDateError = errors[notificationDateFieldId] ?? "";
+
+  // =========================================================
+  // SECTION UI — ORIGINAL LAYOUT PRESERVED
+  // =========================================================
 
   return (
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -105,20 +130,39 @@ export default function TravelHistorySection() {
               />
             </div>
 
-            {/* CONDITIONAL NOTIFICATION DATE */}
+            {/* =================================================
+                CONDITIONAL NOTIFICATION DATE
+                NEW: MUI v9 inline validation
+               ================================================= */}
+
             {travelHistory.notifiedToConcernedDsfpSimo && (
               <div className="mt-4 grid gap-2 sm:grid-cols-[max-content_190px] sm:items-start">
                 <label className="pt-2 text-[12px] font-semibold text-[#173b69]">
                   Date of notification
                 </label>
 
-                <DateField
-                  value={travelHistory.notificationDate}
-                  onChange={updateNotificationDate}
-                  disabled={readOnly}
-                  noFuture
-                  ariaLabel="DSFP SIMO date of notification"
-                />
+                <ValidatedField
+                  fieldId={notificationDateFieldId}
+                  error={notificationDateError}
+                  className="min-w-0 [&_.MuiFormHelperText-root]:mt-1!"
+                >
+                  <div
+                    className={
+                      notificationDateError
+                        ? "[&_.MuiFormHelperText-root]:hidden"
+                        : ""
+                    }
+                  >
+                    <DateField
+                      value={travelHistory.notificationDate}
+                      onChange={updateNotificationDate}
+                      disabled={readOnly}
+                      noFuture
+                      ariaLabel="DSFP SIMO date of notification"
+                      errorMessage={notificationDateError}
+                    />
+                  </div>
+                </ValidatedField>
               </div>
             )}
           </div>

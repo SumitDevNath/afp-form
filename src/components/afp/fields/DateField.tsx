@@ -1,7 +1,6 @@
 import { useId, useRef, useState } from "react";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import { IconButton, InputAdornment, TextField } from "@mui/material";
-import FieldError from "./FieldError";
 import {
   convertNativeDateToDisplay,
   isFutureDate,
@@ -16,6 +15,7 @@ interface DateFieldProps {
   noFuture?: boolean;
   placeholder?: string;
   ariaLabel: string;
+  errorMessage?: string;
 }
 
 function getDateError(value: string, noFuture: boolean): string {
@@ -49,11 +49,13 @@ export default function DateField({
   noFuture = false,
   placeholder = "DD-MM-YYYY",
   ariaLabel,
+  errorMessage = "",
 }: DateFieldProps) {
   const inputId = useId();
   const nativeDateRef = useRef<HTMLInputElement>(null);
   const [touched, setTouched] = useState(false);
-  const error = touched ? getDateError(value, noFuture) : "";
+  const localError = touched ? getDateError(value, noFuture) : "";
+  const error = errorMessage || localError;
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value);
   };
@@ -92,12 +94,17 @@ export default function DateField({
         onBlur={() => setTouched(true)}
         disabled={disabled}
         error={Boolean(error)}
+        helperText={errorMessage ? undefined : localError || undefined}
         placeholder={placeholder}
         aria-label={ariaLabel}
         autoComplete="off"
         fullWidth
         size="small"
         slotProps={{
+          formHelperText: {
+            role: "alert",
+            sx: { ml: 0, mt: 0.5, fontSize: "0.75rem", lineHeight: 1.5 },
+          },
           htmlInput: {
             maxLength: 10,
             inputMode: "numeric",
@@ -141,6 +148,10 @@ export default function DateField({
             "&.Mui-focused fieldset": {
               borderColor: "#2563eb",
             },
+            "&.Mui-error fieldset, &.Mui-error:hover fieldset, &.Mui-error.Mui-focused fieldset":
+              {
+                borderColor: "#d32f2f",
+              },
           },
           "& input": {
             py: "8px",
@@ -165,8 +176,6 @@ export default function DateField({
           absolute h-0 w-0 opacity-0
         "
       />
-
-      <FieldError message={error} />
     </div>
   );
 }

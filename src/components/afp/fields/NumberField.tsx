@@ -8,6 +8,9 @@ export interface NumberFieldProps {
   disabled?: boolean;
   errorMessage?: string;
   onTouched?: () => void;
+
+  // NEW: MUI v9 error styling
+  error?: boolean;
 }
 
 export default function NumberField({
@@ -17,6 +20,7 @@ export default function NumberField({
   disabled = false,
   errorMessage,
   onTouched,
+  error = false,
 }: NumberFieldProps) {
   const handleChange = (rawValue: string) => {
     if (rawValue === "") {
@@ -41,6 +45,7 @@ export default function NumberField({
         type="number"
         size="small"
         aria-label={ariaLabel}
+        error={error || Boolean(errorMessage)}
         slotProps={{
           htmlInput: {
             min: 0,
@@ -52,11 +57,13 @@ export default function NumberField({
             xs: "100%",
             sm: 140,
           },
+
           "& .MuiOutlinedInput-root": {
             minHeight: 38,
             borderRadius: "8px",
             backgroundColor: "#ffffff",
           },
+
           "& input": {
             py: "8px",
             fontSize: "0.8rem",

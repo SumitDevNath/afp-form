@@ -1,6 +1,8 @@
 import { TextField } from "@mui/material";
 import DateField from "../fields/DateField";
 import YesNoField from "../fields/YesNoField";
+import ValidatedField from "../fields/ValidatedField";
+import { useAFPValidation } from "../validation/AFPValidationContext";
 import {
   createInitialAFPSignsSymptoms,
   createInitialAFPVaccinationHistory,
@@ -31,12 +33,15 @@ interface ClinicalYesNoQuestionProps {
   value: YesNo;
   onChange: (value: YesNo) => void;
   disabled?: boolean;
+  fieldId: string;
+  error?: string;
 }
 
 interface ClinicalDateQuestionProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  error?: string;
 }
 
 // Question configurations
@@ -73,7 +78,7 @@ const rightQuestions: ClinicalQuestion[] = [
 
 // Shared styling
 const questionRowClass =
-  "grid gap-3 border-b border-[#dde7f0] py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start";
+  "grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start";
 
 const questionLabelClass =
   "m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]";
@@ -85,20 +90,30 @@ function ClinicalYesNoQuestion({
   value,
   onChange,
   disabled = false,
+  fieldId,
+  error = "",
 }: ClinicalYesNoQuestionProps) {
   return (
-    <div className={questionRowClass}>
-      <p className={questionLabelClass}>
-        {number}. {label}
-      </p>
+    <ValidatedField
+      fieldId={fieldId}
+      error={error}
+      className="border-b border-[#dde7f0]"
+    >
+      <div className={questionRowClass}>
+        <p className={questionLabelClass}>
+          {number}. {label}
+        </p>
 
-      <YesNoField
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        ariaLabel={`${number}. ${label}`}
-      />
-    </div>
+        <YesNoField
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          ariaLabel={`${number}. ${label}`}
+          error={Boolean(error)}
+          errorId={`${fieldId}-error`}
+        />
+      </div>
+    </ValidatedField>
   );
 }
 
@@ -107,26 +122,35 @@ function ClinicalDateQuestion({
   value,
   onChange,
   disabled = false,
+  error = "",
 }: ClinicalDateQuestionProps) {
   return (
-    <div className="grid gap-3 border-b border-[#dde7f0] py-4 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-start">
-      <p className="m-0 pt-2 text-[13px] font-semibold leading-5 text-[#173b69]">
-        4. Date of paralysis onset
-      </p>
+    <ValidatedField
+      fieldId="clinicalInformation.paralysisOnsetDate"
+      error={error}
+      className="border-b border-[#dde7f0]"
+    >
+      <div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-start">
+        <p className="m-0 pt-2 text-[13px] font-semibold leading-5 text-[#173b69]">
+          4. Date of paralysis onset
+        </p>
 
-      <DateField
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        noFuture
-        ariaLabel="Date of paralysis onset"
-      />
-    </div>
+        <DateField
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          noFuture
+          ariaLabel="Date of paralysis onset"
+          errorMessage={error}
+        />
+      </div>
+    </ValidatedField>
   );
 }
 
 export default function ClinicalInformationSection() {
   const { data, updateData, readOnly } = useAFPForm();
+  const { errors } = useAFPValidation();
 
   const clinicalInformation = data.clinicalInformation;
   const screeningStatus = getAFPScreeningStatus(clinicalInformation);
@@ -205,6 +229,8 @@ export default function ClinicalInformationSection() {
       value={clinicalInformation[field]}
       onChange={(value) => updateYesNoField(field, value)}
       disabled={readOnly}
+      fieldId={`clinicalInformation.${field}`}
+      error={errors[`clinicalInformation.${field}`]}
     />
   );
 
@@ -228,6 +254,7 @@ export default function ClinicalInformationSection() {
             value={clinicalInformation.paralysisOnsetDate}
             onChange={updateOnsetDate}
             disabled={readOnly}
+            error={errors["clinicalInformation.paralysisOnsetDate"]}
           />
 
           {rightQuestions.map(renderQuestion)}

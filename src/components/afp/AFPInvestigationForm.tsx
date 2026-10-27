@@ -1,4 +1,5 @@
 import { AFPFormProvider, useAFPForm } from "./context/AFPFormContext";
+import AFPValidationBridge from "./validation/AFPValidationBridge";
 import AdditionalInformationSection from "./sections/AdditionalInformationSection";
 import ClinicalExaminationSection from "./sections/ClinicalExaminationSection";
 import ClinicalInformationSection from "./sections/ClinicalInformationSection";
@@ -12,6 +13,7 @@ import type {
   AFPSuspectedDiagnosisOption,
 } from "./types/afp.types";
 import { getAFPScreeningStatus } from "./utils/afpScreening.utils";
+import AFPSubmitButton from "./AFPSubmitButton";
 
 interface AFPFormContentProps {
   facilityOptions?: AFPFacilityOption[];
@@ -59,6 +61,9 @@ function AFPFormContent({
           <AdditionalInformationSection />
         </>
       )}
+
+      {/* Validation pilot: currently validates Clinical Information only. */}
+      <AFPSubmitButton />
     </div>
   );
 }
@@ -72,10 +77,14 @@ export default function AFPInvestigationForm({
 }: AFPInvestigationFormProps) {
   return (
     <AFPFormProvider value={value} onChange={onChange} readOnly={readOnly}>
-      <AFPFormContent
-        facilityOptions={facilityOptions}
+      <AFPValidationBridge
         suspectedDiagnosisOptions={suspectedDiagnosisOptions}
-      />
+      >
+        <AFPFormContent
+          facilityOptions={facilityOptions}
+          suspectedDiagnosisOptions={suspectedDiagnosisOptions}
+        />
+      </AFPValidationBridge>
     </AFPFormProvider>
   );
 }

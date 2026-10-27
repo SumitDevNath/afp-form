@@ -41,7 +41,7 @@ export default function AFPDemoPage() {
       className="
         mx-auto
         w-full
-        max-w-[1400px]
+        max-w-350
         px-3
         py-6
         sm:px-6

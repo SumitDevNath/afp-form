@@ -12,6 +12,7 @@ export default function ClinicalExaminationSection() {
       </div>
 
       {/* REFLEXES & MUSCLE STRENGTH */}
+      {/* <div className="grid grid-cols-1 items-stretch gap-5 px-5 py-5 sm:px-7 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"> */}
       <div className="grid grid-cols-1 items-stretch gap-5 px-5 py-5 sm:px-7 xl:grid-cols-2">
         <ReflexesSection />
         <MuscleStrengthSection />
