@@ -1443,13 +1443,6 @@ export function validatePreviousHealthcareContacts(
     );
   }
 
-  requireAFPField(
-    errors,
-    "previousHealthcareContacts.additionalComments",
-    history.additionalComments,
-    "Additional comments",
-  );
-
   // The dropdown is disabled if no options are configured.
   if (suspectedDiagnosisOptions.length > 0) {
     requireAFPField(
@@ -1876,7 +1869,9 @@ function NumberQuestionRow({
       className="[&_.MuiFormHelperText-root]:mt-1!"
     >
       <div className={className}>
-        <label className={dependentLabelClass}>{label}</label>
+        <FieldLabel fieldId={fieldId} className={dependentLabelClass}>
+          {label}
+        </FieldLabel>
 
         <NumberField {...fieldProps} error={Boolean(errorMessage)} />
       </div>
@@ -1904,9 +1899,13 @@ function QuestionCard({
     <div className="rounded-xl border border-[#d6e3f0] bg-[#f5f9fd] p-4 sm:p-5">
       <ValidatedField fieldId={fieldId} error={error}>
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-          <p className="m-0 pt-2 text-[13px] font-bold leading-5 text-[#173b69]">
+          <FieldLabel
+            fieldId={fieldId}
+            component="p"
+            className="m-0 pt-2 text-[13px] font-bold leading-5 text-[#173b69]"
+          >
             {number}. {label}
-          </p>
+          </FieldLabel>
 
           <YesNoPendingField
             value={value}
@@ -1932,7 +1931,7 @@ function AdditionalInformationSection() {
   const { data, updateData, readOnly } = useAFPForm();
 
   // NEW: Shared Submit Form validation.
-  const { errors } = useAFPValidation();
+  const { errors, attempted } = useAFPValidation();
 
   const additional = data.additionalInformation;
 
@@ -2047,29 +2046,32 @@ function AdditionalInformationSection() {
 
   const outbreakResponseError = errors[outbreakResponseId] ?? "";
 
-  const additionalCountError =
-    errors[additionalCountId] ||
-    (additionalCountTouched &&
-    additional.additionalCasesIdentified === "yes" &&
-    additional.numberOfAdditionalCases === null
-      ? "Enter how many additional AFP cases were identified."
-      : "");
+  const additionalCountError = attempted
+    ? errors[additionalCountId] ||
+      (additionalCountTouched &&
+      additional.additionalCasesIdentified === "yes" &&
+      additional.numberOfAdditionalCases === null
+        ? "Enter how many additional AFP cases were identified."
+        : "")
+    : "";
 
-  const vaccinatedCountError =
-    errors[vaccinatedCountId] ||
-    (vaccinatedCountTouched &&
-    additional.outbreakResponseImmunizationDone === "yes" &&
-    additional.numberOfChildrenVaccinated === null
-      ? "Enter how many children were vaccinated."
-      : "");
+  const vaccinatedCountError = attempted
+    ? errors[vaccinatedCountId] ||
+      (vaccinatedCountTouched &&
+      additional.outbreakResponseImmunizationDone === "yes" &&
+      additional.numberOfChildrenVaccinated === null
+        ? "Enter how many children were vaccinated."
+        : "")
+    : "";
 
-  const explanationError =
-    errors[explanationId] ||
-    (explanationTouched &&
-    additional.outbreakResponseImmunizationDone === "no" &&
-    !additional.outbreakResponseExplanation.trim()
-      ? "Please explain why outbreak response immunization was not done."
-      : "");
+  const explanationError = attempted
+    ? errors[explanationId] ||
+      (explanationTouched &&
+      additional.outbreakResponseImmunizationDone === "no" &&
+      !additional.outbreakResponseExplanation.trim()
+        ? "Please explain why outbreak response immunization was not done."
+        : "")
+    : "";
 
   // =========================================================
   // SECTION UI — ORIGINAL LAYOUT PRESERVED
@@ -2176,12 +2178,13 @@ function AdditionalInformationSection() {
 
             {additional.outbreakResponseImmunizationDone === "no" && (
               <div className="mt-4 flex flex-col gap-1 border-t border-[#dce6f0] pt-4">
-                <label
+                <FieldLabel
+                  fieldId={explanationId}
                   htmlFor="afp-ori-explanation"
                   className="text-[12px] font-semibold leading-5 text-[#173b69]"
                 >
                   Please explain why outbreak response immunization was not done
-                </label>
+                </FieldLabel>
 
                 <div className="min-w-0" data-afp-field={explanationId}>
                   <TextField
@@ -2357,9 +2360,13 @@ function ClinicalYesNoQuestion({
       className="border-b border-[#dde7f0]"
     >
       <div className={questionRowClass}>
-        <p className={questionLabelClass}>
+        <FieldLabel
+          component="p"
+          fieldId={fieldId}
+          className={questionLabelClass}
+        >
           {number}. {label}
-        </p>
+        </FieldLabel>
 
         <YesNoField
           value={value}
@@ -2388,9 +2395,13 @@ function ClinicalDateQuestion({
       className="border-b border-[#dde7f0]"
     >
       <div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-start">
-        <p className="m-0 pt-2 text-[13px] font-semibold leading-5 text-[#173b69]">
+        <FieldLabel
+          component="p"
+          fieldId="clinicalInformation.paralysisOnsetDate"
+          className="m-0 pt-2 text-[13px] font-semibold leading-5 text-[#173b69]"
+        >
           4. Date of paralysis onset
-        </p>
+        </FieldLabel>
 
         <DateField
           value={value}
@@ -2620,9 +2631,13 @@ function MuscleStrengthRow({
       className={`${tableGridClass} gap-3 border-t border-[#e1e9f1] px-3 py-3 sm:items-start sm:px-4`}
     >
       <div className="pt-0 sm:pt-2">
-        <span className="text-[12px] font-semibold text-[#334155]">
+        <FieldLabel
+          component="span"
+          fieldId={`${fieldId}.right`}
+          className="text-[12px] font-semibold text-[#334155]"
+        >
           {label}
-        </span>
+        </FieldLabel>
       </div>
 
       {sides.map(({ key, title }) => {
@@ -3074,7 +3089,9 @@ function ContactTextQuestion({
 
   return (
     <ValidatedField fieldId={fieldId} error={error} className={errorSpacing}>
-      <label className={contactLabelClass}>{question.label}</label>
+      <FieldLabel fieldId={fieldId} className={contactLabelClass}>
+        {question.label}
+      </FieldLabel>
 
       <CompactTextField
         value={contact[question.field]}
@@ -3177,7 +3194,9 @@ function ContactBlock({
             showMessage={false}
             className="min-w-0 [&_.MuiFormHelperText-root]:whitespace-nowrap"
           >
-            <label className={contactLabelClass}>3. Dates case visited</label>
+            <FieldLabel fieldId={dateId} className={contactLabelClass}>
+              3. Dates case visited
+            </FieldLabel>
 
             <DateField
               value={contact.dateCaseVisited}
@@ -3196,7 +3215,9 @@ function ContactBlock({
             error={networkError}
             className={`min-w-0 ${errorSpacing}`}
           >
-            <label className={contactLabelClass}>4. Already in network?</label>
+            <FieldLabel fieldId={networkId} className={contactLabelClass}>
+              4. Already in network?
+            </FieldLabel>
 
             <YesNoUnknownField
               value={contact.alreadyInNetwork}
@@ -3215,9 +3236,9 @@ function ContactBlock({
             error={reportError}
             className={`min-w-0 ${errorSpacing}`}
           >
-            <label className={contactLabelClass}>
+            <FieldLabel fieldId={reportId} className={contactLabelClass}>
               5. Did they / person report the case?
-            </label>
+            </FieldLabel>
 
             <YesNoField
               value={contact.reportedCase}
@@ -3465,9 +3486,12 @@ function PreviousHealthcareContactsSection({
               error={errors[categoryId]}
               className={errorSpacing}
             >
-              <label className="mb-1.5 block text-[12px] font-semibold text-[#355b88]">
+              <FieldLabel
+                fieldId={categoryId}
+                className="mb-1.5 block text-[12px] font-semibold text-[#355b88]"
+              >
                 Category of the first contact:
-              </label>
+              </FieldLabel>
 
               <OptionsSelect
                 value={history.firstContactCategory ?? ""}
@@ -3516,7 +3540,9 @@ function PreviousHealthcareContactsSection({
             error={errors[commentsId]}
             className={errorSpacing}
           >
-            <label className={sideLabelClass}>Additional comments</label>
+            <FieldLabel fieldId={commentsId} className={sideLabelClass}>
+              Additional comments
+            </FieldLabel>
 
             <CompactTextField
               value={history.additionalComments}
@@ -3544,7 +3570,13 @@ function PreviousHealthcareContactsSection({
             error={errors[diagnosisId]}
             className={`max-w-[320px] ${errorSpacing}`}
           >
-            <label className={sideLabelClass}>Suspected diagnosis</label>
+            <FieldLabel
+              fieldId={diagnosisId}
+              className={sideLabelClass}
+              required={suspectedDiagnosisOptions.length > 0}
+            >
+              Suspected diagnosis
+            </FieldLabel>
 
             <OptionsSelect
               value={history.suspectedDiagnosis}
@@ -3709,7 +3741,9 @@ function ReflexField(props: ReflexFieldProps) {
       className={wrapperClass}
       style={placement ? { top: placement.top } : undefined}
     >
-      <label className={labelClass}>{label}</label>
+      <FieldLabel fieldId={fieldId} className={labelClass}>
+        {label}
+      </FieldLabel>
 
       {props.type === "score" ? (
         <ReflexSelect
@@ -4082,9 +4116,13 @@ function QuestionRow({
       className="border-b border-[#dde7f0]"
     >
       <div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-        <p className="m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]">
+        <FieldLabel
+          fieldId={fieldId}
+          component="p"
+          className="m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]"
+        >
           {number}. {label}
-        </p>
+        </FieldLabel>
 
         <YesNoUnknownField
           value={value}
@@ -4276,9 +4314,13 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
               error={Boolean(errors["signsSymptoms.siteOfParalysis"])}
               sx={{ minWidth: 0 }}
             >
-              <p className="m-0 mb-4 text-[13px] font-semibold text-[#173b69]">
+              <FieldLabel
+                component="p"
+                fieldId="signsSymptoms.siteOfParalysis"
+                className="m-0 mb-4 text-[13px] font-semibold text-[#173b69]"
+              >
                 3. SITE OF PARALYSIS
-              </p>
+              </FieldLabel>
 
               <Box
                 className="grid grid-cols-2 gap-x-5 gap-y-3"
@@ -4381,9 +4423,12 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
                   errors["signsSymptoms.healthFacility.selectedFacilityOption"]
                 }
               >
-                <label className={`${fieldLabelClass} lg:leading-4`}>
+                <FieldLabel
+                  fieldId="signsSymptoms.healthFacility.selectedFacilityOption"
+                  className={`${fieldLabelClass} lg:leading-4`}
+                >
                   Select the health facility from the dropdown
-                </label>
+                </FieldLabel>
 
                 <SelectField
                   value={healthFacility.selectedFacilityOption}
@@ -4410,12 +4455,13 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
                   }
                   className="mt-3 min-w-0"
                 >
-                  <label
+                  <FieldLabel
+                    fieldId="signsSymptoms.healthFacility.otherFacilityName"
                     htmlFor="afp-other-facility-name"
                     className={fieldLabelClass}
                   >
                     Facility name
-                  </label>
+                  </FieldLabel>
 
                   <TextField
                     id="afp-other-facility-name"
@@ -4453,9 +4499,12 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
               error={notificationDateError}
               className="min-w-0"
             >
-              <label className={`${fieldLabelClass} lg:leading-4`}>
+              <FieldLabel
+                fieldId="signsSymptoms.healthFacility.notificationDate"
+                className={`${fieldLabelClass} lg:leading-4`}
+              >
                 Date of notification
-              </label>
+              </FieldLabel>
 
               <div
                 className={`
@@ -4485,12 +4534,13 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
               error={errors["signsSymptoms.healthFacility.medicalRecordNumber"]}
               className="min-w-0"
             >
-              <label
+              <FieldLabel
+                fieldId="signsSymptoms.healthFacility.medicalRecordNumber"
                 htmlFor="afp-medical-record-number"
                 className={`${fieldLabelClass} lg:leading-4`}
               >
                 Medical record #
-              </label>
+              </FieldLabel>
 
               <TextField
                 id="afp-medical-record-number"
@@ -4652,9 +4702,12 @@ function TravelHistorySection() {
 
             {travelHistory.notifiedToConcernedDsfpSimo && (
               <div className="mt-4 grid gap-2 sm:grid-cols-[max-content_190px] sm:items-start">
-                <label className="pt-2 text-[12px] font-semibold text-[#173b69]">
+                <FieldLabel
+                  fieldId={notificationDateFieldId}
+                  className="pt-2 text-[12px] font-semibold text-[#173b69]"
+                >
                   Date of notification
-                </label>
+                </FieldLabel>
 
                 <ValidatedField
                   fieldId={notificationDateFieldId}
@@ -4886,9 +4939,13 @@ function DoseQuestion({
     <div
       className={`${questionRowClass_VaccinationHistory} md:grid-cols-[minmax(0,1fr)_130px_90px]`}
     >
-      <p className={questionLabelClass_VaccinationHistory}>
+      <FieldLabel
+        fieldId={sourceFieldId}
+        component="p"
+        className={questionLabelClass_VaccinationHistory}
+      >
         {number}. {label}
-      </p>
+      </FieldLabel>
 
       {/* CARD / HISTORY */}
       <ValidatedField
@@ -4961,9 +5018,13 @@ function DateQuestion({
           ${error ? "pt-4 pb-1" : "py-4"}
         `}
       >
-        <p className={questionLabelClass_VaccinationHistory}>
+        <FieldLabel
+          fieldId={fieldId}
+          component="p"
+          className={questionLabelClass_VaccinationHistory}
+        >
           {number}. {label}
-        </p>
+        </FieldLabel>
 
         <div className={error ? "[&_.MuiFormHelperText-root]:hidden" : ""}>
           <DateField
@@ -5178,9 +5239,13 @@ function VaccinationHistorySection() {
                 className="min-w-0 [&_.MuiFormHelperText-root]:mt-1!"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-                  <p className="m-0 text-[13px] font-semibold leading-5 text-[#173b69]">
+                  <FieldLabel
+                    fieldId={q6FieldId}
+                    component="p"
+                    className="m-0 text-[13px] font-semibold leading-5 text-[#173b69]"
+                  >
                     6. Was OPV given after paralysis onset?
-                  </p>
+                  </FieldLabel>
 
                   <YesNoUnknownField
                     value={vaccination.opvGivenAfterParalysis}
@@ -5201,9 +5266,12 @@ function VaccinationHistorySection() {
                   className="min-w-0 [&_.MuiFormHelperText-root]:mt-1!"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                    <label className="text-[11px] font-semibold text-[#52677e]">
+                    <FieldLabel
+                      fieldId={opvAfterDateFieldId}
+                      className="text-[11px] font-semibold text-[#52677e]"
+                    >
                       Date of the OPV
-                    </label>
+                    </FieldLabel>
 
                     <div
                       className={`
@@ -5788,8 +5856,8 @@ function DateField({
 }: DateFieldProps) {
   const inputId = useId();
   const nativeDateRef = useRef<HTMLInputElement>(null);
-  const [touched, setTouched] = useState(false);
-  const localError = touched ? getDateError(value, noFuture) : "";
+  const { attempted } = useAFPValidation();
+  const localError = attempted ? getDateError(value, noFuture) : "";
   const error = errorMessage || localError;
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value);
@@ -5804,7 +5872,6 @@ function DateField({
     }
 
     onChange(convertNativeDateToDisplay(nativeValue));
-    setTouched(true);
   };
 
   const openCalendar = () => {
@@ -5826,7 +5893,6 @@ function DateField({
         id={inputId}
         value={value}
         onChange={handleTextChange}
-        onBlur={() => setTouched(true)}
         disabled={disabled}
         error={Boolean(error)}
         helperText={errorMessage ? undefined : localError || undefined}
@@ -6160,6 +6226,147 @@ function ToggleSwitch({
         },
       }}
     />
+  );
+}
+
+// ===== Required-field indicators (UI-only; existing validators stay authoritative) =====
+const AFP_REQUIRED_ALWAYS = new Set<string>([
+  "signsSymptoms.feverWhenParalysisBegan",
+  "signsSymptoms.musclePainWhenParalysisBegan",
+  "signsSymptoms.paralysisAsymmetric",
+  "signsSymptoms.paralysisMovedUpward",
+  "signsSymptoms.sensationPresentAtParalysisSite",
+  "signsSymptoms.childAtHealthFacility",
+  "signsSymptoms.siteOfParalysis",
+  "previousHealthcareContacts.firstContactCategory",
+  "additionalInformation.searchForAdditionalCases",
+  "additionalInformation.outbreakResponseImmunizationDone",
+]);
+
+function isAFPFieldRequired(fieldId: string, data: AFPFormData): boolean {
+  if (fieldId.startsWith("clinicalInformation.")) return true;
+  if (fieldId === "screeningDiagnosis") return false; // "if known"
+  if (getAFPScreeningStatus(data.clinicalInformation) !== "eligible") {
+    return false;
+  }
+
+  if (AFP_REQUIRED_ALWAYS.has(fieldId)) return true;
+  if (fieldId.startsWith("clinicalExamination.")) return true;
+  if (fieldId.startsWith("previousHealthcareContacts.contacts.")) return true;
+
+  const signs = data.signsSymptoms;
+  const vaccination = data.vaccinationHistory;
+  const travel = data.travelHistory;
+  const history = data.previousHealthcareContacts;
+  const additional = data.additionalInformation;
+
+  switch (fieldId) {
+    case "signsSymptoms.otherParalysisSite":
+      return signs.siteOfParalysis.includes("other");
+    case "signsSymptoms.healthFacility.selectedFacilityOption":
+    case "signsSymptoms.healthFacility.notificationDate":
+    case "signsSymptoms.healthFacility.medicalRecordNumber":
+      return signs.childAtHealthFacility === "yes";
+    case "signsSymptoms.healthFacility.otherFacilityName":
+      return (
+        signs.childAtHealthFacility === "yes" &&
+        signs.healthFacility.selectedFacilityOption === AFP_OTHER_FACILITY_VALUE
+      );
+    case "vaccinationHistory.lastOpvDoseBeforeParalysisDate":
+      return (
+        vaccination.available &&
+        ((vaccination.opvCampaignDoses.numberOfDoses ?? 0) > 0 ||
+          (vaccination.opvRoutineDoses.numberOfDoses ?? 0) > 0)
+      );
+    case "vaccinationHistory.lastIpvDoseBeforeParalysisDate":
+      return (
+        vaccination.available && (vaccination.ipvDoses.numberOfDoses ?? 0) > 0
+      );
+    case "vaccinationHistory.opvAfterParalysisDate":
+      return (
+        vaccination.available && vaccination.opvGivenAfterParalysis === "yes"
+      );
+    case "travelHistory.notificationDate":
+      return (
+        travel.travelOutsideAreaLast30Days && travel.notifiedToConcernedDsfpSimo
+      );
+    case "previousHealthcareContacts.firstContactCategoryOther":
+      return history.firstContactCategory === "Other";
+    case "previousHealthcareContacts.suspectedDiagnosis":
+      return false; // Enable via required override when options are configured.
+    case "additionalInformation.numberOfAdditionalCases":
+      return (
+        additional.searchForAdditionalCases === "yes" &&
+        additional.additionalCasesIdentified === "yes"
+      );
+    case "additionalInformation.numberOfChildrenVaccinated":
+      return additional.outbreakResponseImmunizationDone === "yes";
+    case "additionalInformation.outbreakResponseExplanation":
+      return additional.outbreakResponseImmunizationDone === "no";
+    default:
+      return (
+        vaccination.available &&
+        (/^vaccinationHistory\.(opvCampaignDoses|opvRoutineDoses|ipvDoses)\.(recordSource|numberOfDoses)$/.test(
+          fieldId,
+        ) ||
+          fieldId === "vaccinationHistory.opvGivenAfterParalysis")
+      );
+  }
+}
+
+interface FieldLabelProps {
+  children: ReactNode;
+  fieldId: string;
+  component?: "label" | "p" | "span";
+  className?: string;
+  htmlFor?: string;
+  required?: boolean;
+}
+
+function FieldLabel({
+  children,
+  fieldId,
+  component = "label",
+  className,
+  htmlFor,
+  required,
+}: FieldLabelProps) {
+  const { data } = useAFPForm();
+  const showRequired = required ?? isAFPFieldRequired(fieldId, data);
+
+  const content = (
+    <>
+      {children}
+      {showRequired && (
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={{ ml: "2px", color: "error.main" }}
+        >
+          *
+        </Box>
+      )}
+    </>
+  );
+
+  if (component === "p") {
+    return (
+      <Box component="p" className={className}>
+        {content}
+      </Box>
+    );
+  }
+  if (component === "span") {
+    return (
+      <Box component="span" className={className}>
+        {content}
+      </Box>
+    );
+  }
+  return (
+    <Box component="label" htmlFor={htmlFor} className={className}>
+      {content}
+    </Box>
   );
 }
 
