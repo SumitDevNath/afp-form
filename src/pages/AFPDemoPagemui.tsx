@@ -317,24 +317,17 @@ export function convertDisplayDateToNative(value: string): string {
 }
 
 // ===== Merged source: afpScreening.utils.ts =====
-
-const AFP_MAX_ONSET_DAYS = 60;
-
-// Calculate completed calendar days since paralysis onset.
+// Compare calendar dates rather than elapsed hours, avoiding DST-related errors.
 export function getAFPOnsetAgeDays(value: string): number | null {
   const onset = parseDisplayDate(value);
-
   if (!onset) return null;
 
   const today = new Date();
-
-  // UTC calendar dates prevent daylight-saving-time errors.
   const utcOnset = Date.UTC(
     onset.getFullYear(),
     onset.getMonth(),
     onset.getDate(),
   );
-
   const utcToday = Date.UTC(
     today.getFullYear(),
     today.getMonth(),
@@ -356,7 +349,6 @@ export function getAFPScreeningStatus(
     paralysisPresentAtBirth,
   } = clinicalInformation;
 
-  // Preserve existing disqualifying-answer logic.
   const hasDisqualifyingAnswer =
     paralysisPresent === "no" ||
     paralysisFlaccid === "no" ||
@@ -379,16 +371,15 @@ export function getAFPScreeningStatus(
     return "pending";
   }
 
-  // NEW: Date of paralysis onset is part of screening.
   const daysSinceOnset = getAFPOnsetAgeDays(paralysisOnsetDate);
 
-  // Missing, invalid, or future date.
+  // Missing, invalid, or future dates do not establish eligibility.
   if (daysSinceOnset === null || daysSinceOnset < 0) {
     return "pending";
   }
 
-  // Eligibility requires onset fewer than 60 days ago.
-  return daysSinceOnset < AFP_MAX_ONSET_DAYS ? "eligible" : "not_eligible";
+  // Local workflow rule: onset must have occurred strictly fewer than 60 days ago.
+  return daysSinceOnset < 60 ? "eligible" : "not_eligible";
 }
 
 // ===== Merged source: afpFacilities.ts =====
@@ -1481,6 +1472,13 @@ export function validatePreviousHealthcareContacts(
     );
   }
 
+  requireAFPField(
+    errors,
+    "previousHealthcareContacts.additionalComments",
+    history.additionalComments,
+    "Additional comments",
+  );
+
   // The dropdown is disabled if no options are configured.
   if (suspectedDiagnosisOptions.length > 0) {
     requireAFPField(
@@ -2302,8 +2300,7 @@ function ClinicalExaminationSection() {
       </div>
 
       {/* REFLEXES & MUSCLE STRENGTH */}
-      {/* <div className="grid grid-cols-1 items-stretch gap-5 px-5 py-5 sm:px-7 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"> */}
-      <div className="grid grid-cols-1 items-stretch gap-5 px-5 py-5 sm:px-7 xl:grid-cols-2">
+      <div className="grid grid-cols-1 items-stretch gap-5 px-5 py-5 sm:px-7 xl:grid-cols-[minmax(467px,1fr)_minmax(0,1.4fr)] xl:px-2">
         <ReflexesSection />
         <MuscleStrengthSection />
       </div>
@@ -2516,37 +2513,28 @@ function ClinicalInformationSection() {
       };
 
       const nextStatus = getAFPScreeningStatus(nextClinicalInformation);
-
       const onsetAgeDays = getAFPOnsetAgeDays(value);
-
-      // Do not clear entered details while editing an
-      // incomplete date. Reset when the valid onset date
-      // confirms the case is outside the 60-day window.
+      // Preserve entered details during incomplete edits. Reset only when a
+      // valid onset date establishes that the 60-day window was exceeded.
       const outsideWindow = onsetAgeDays !== null && onsetAgeDays >= 60;
 
       return {
         ...previous,
         clinicalInformation: nextClinicalInformation,
-
         screeningDiagnosis:
           nextStatus === "not_eligible" ? previous.screeningDiagnosis : "",
-
         signsSymptoms: outsideWindow
           ? createInitialAFPSignsSymptoms()
           : previous.signsSymptoms,
-
         vaccinationHistory: outsideWindow
           ? createInitialAFPVaccinationHistory()
           : previous.vaccinationHistory,
-
         travelHistory: outsideWindow
           ? createInitialAFPTravelHistory()
           : previous.travelHistory,
-
         clinicalExamination: outsideWindow
           ? createInitialAFPClinicalExamination()
           : previous.clinicalExamination,
-
         additionalInformation: outsideWindow
           ? createInitialAFPAdditionalInformation()
           : previous.additionalInformation,
@@ -2608,10 +2596,9 @@ function ClinicalInformationSection() {
         <div className="mx-5 mb-5 rounded-lg border border-[#f0cf8c] bg-[#fff9ec] px-4 py-4 sm:mx-7 sm:px-5">
           <label
             htmlFor="afp-screening-diagnosis"
-            className="mb-2 block text-[16px] font-medium text-[#8a5a13]"
+            className="mb-2 block text-[13px] font-medium text-[#8a5a13]"
           >
-            Based on your answer, the Patient has not affected with Acute
-            Flaccid Paralysis. Specify the diagnosis, if known:
+            Specify the diagnosis, if known:
           </label>
 
           <TextField
@@ -2681,7 +2668,7 @@ const sides = [
 ] as const;
 
 const tableGridClass =
-  "grid grid-cols-1 sm:grid-cols-[minmax(130px,0.75fr)_minmax(0,1fr)_minmax(0,1fr)]";
+  "grid grid-cols-1 sm:grid-cols-[minmax(130px,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[105px_minmax(0,1fr)_minmax(0,1fr)] xl:gap-x-1";
 
 const mobileSideLabelClass =
   "mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[#64748b] sm:hidden";
@@ -2868,7 +2855,7 @@ function MuscleStrengthSection() {
         Muscle Strength
       </h3>
 
-      <div className="grid grid-cols-1 gap-5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* UPPER LIMB */}
         <MuscleStrengthTable title="Upper Limb">
           {UPPER_LIMB_MUSCLE_FIELDS.map(({ key, label }) => (
@@ -3767,7 +3754,7 @@ const sides_Reflexes = [
 // =========================================================
 
 const attachedLabelClass =
-  "mb-0 block px-2 py-0 text-center text-[10px] font-semibold leading-4 text-[#173b69]";
+  "mb-0 block px-1 py-0 text-center text-[9px] font-semibold leading-[11px] text-[#173b69]";
 
 const mobileLabelClass = "text-[12px] font-semibold text-[#173b69]";
 
@@ -3797,13 +3784,13 @@ function ReflexField(props: ReflexFieldProps) {
   } = props;
 
   const wrapperClass = placement
-    ? `absolute z-10 w-[25%] min-w-[125px] max-w-[160px] ${
-        placement.side === "left" ? "left-0" : "right-0"
-      }`
+    ? `absolute z-10 ${placement.side === "left" ? "left-0" : "right-0"}`
     : "grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-center";
 
+  // Keep labels above the controls, outside their measured height.
+  // This makes each compact select center exactly on its SVG connector.
   const labelClass = placement
-    ? `${attachedLabelClass}${props.type === "plantar" ? " mt-3" : ""}`
+    ? `${attachedLabelClass} absolute bottom-full left-0 right-0`
     : mobileLabelClass;
 
   // Desktop and mobile instances share the validation field ID,
@@ -3814,7 +3801,14 @@ function ReflexField(props: ReflexFieldProps) {
     <div
       data-afp-field={fieldId}
       className={wrapperClass}
-      style={placement ? { top: placement.top } : undefined}
+      style={
+        placement
+          ? {
+              top: placement.top,
+              width: REFLEX_DIAGRAM_LAYOUT.controlWidth,
+            }
+          : undefined
+      }
     >
       <FieldLabel fieldId={fieldId} className={labelClass}>
         {label}
@@ -3905,8 +3899,12 @@ function ReflexesSection() {
 
       {/* DESKTOP / TABLET ANATOMICAL LAYOUT */}
       <div
-        className="relative mx-auto hidden w-full max-w-190 md:block"
+        className="relative mx-auto hidden w-full md:block"
         style={{
+          // SVG connector edges now meet the dropdown edges exactly.
+          maxWidth:
+            REFLEX_DIAGRAM_LAYOUT.width +
+            2 * REFLEX_DIAGRAM_LAYOUT.controlWidth,
           height: REFLEX_DIAGRAM_LAYOUT.stageHeight,
         }}
       >
@@ -3989,7 +3987,7 @@ function ReflexesSection() {
 
       {/* MOBILE: RESPONSIVE INFANT DIAGRAM + SCORE LIST */}
       <div className="md:hidden">
-        <div className="mx-auto mb-6 w-full max-w-80">
+        <div className="mx-auto mb-6 w-full max-w-56">
           <div className="mb-2 flex justify-between">
             <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
               RT
@@ -5445,6 +5443,7 @@ function MuscleStrengthSelect({
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
+            px: "10px",
             py: "7px",
             pr: "30px !important",
             overflow: "hidden",
@@ -5526,12 +5525,15 @@ export const REFLEX_ANCHORS = {
   },
 } as const;
 
+// The infant is displayed at 70% of its original desktop size.
+// Keep the 360 × 610 SVG viewBox, anatomical anchors and dropdown sizes unchanged.
 export const REFLEX_DIAGRAM_LAYOUT = {
-  width: 450,
-  height: 763,
+  width: 315,
+  height: 533.75,
+  controlWidth: 96,
   diagramTop: 30,
-  stageHeight: 830,
-  controlCenterOffset: 36,
+  stageHeight: 600,
+  controlCenterOffset: 11.4, // Half of the 22.8px closed Select height.
 } as const;
 
 // Anatomical coordinates.
@@ -5738,7 +5740,13 @@ function ReflexSelect(props: ReflexSelectProps) {
   const hasError = Boolean(errorMessage);
 
   return (
-    <FormControl fullWidth size="small" disabled={disabled} error={hasError}>
+    <FormControl
+      fullWidth
+      size="small"
+      disabled={disabled}
+      error={hasError}
+      sx={{ width: { xs: "60%", md: "100%" } }}
+    >
       <Select
         value={value ?? ""}
         onChange={handleChange}
@@ -5760,34 +5768,32 @@ function ReflexSelect(props: ReflexSelectProps) {
           return option?.label ?? selected;
         }}
         sx={{
-          height: 38,
+          height: 25,
           borderRadius: "7px",
           backgroundColor: "#ffffff",
           fontSize: "0.72rem",
-
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
-            py: "7px",
-            pr: "30px !important",
+            py: "2px",
+            pr: "18px !important",
             overflow: "hidden",
             whiteSpace: "nowrap",
             textOverflow: "ellipsis",
           },
-
+          "& .MuiSelect-icon": {
+            fontSize: 15,
+            right: 2,
+          },
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#334155",
           },
-
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: "#334155",
           },
-
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2563eb",
           },
-
-          // NEW: MUI error border takes priority.
           "&.Mui-error .MuiOutlinedInput-notchedOutline, &.Mui-error:hover .MuiOutlinedInput-notchedOutline, &.Mui-error.Mui-focused .MuiOutlinedInput-notchedOutline":
             {
               borderColor: "error.main",
@@ -6314,6 +6320,7 @@ const AFP_REQUIRED_ALWAYS = new Set<string>([
   "signsSymptoms.childAtHealthFacility",
   "signsSymptoms.siteOfParalysis",
   "previousHealthcareContacts.firstContactCategory",
+  "previousHealthcareContacts.additionalComments",
   "additionalInformation.searchForAdditionalCases",
   "additionalInformation.outbreakResponseImmunizationDone",
 ]);
