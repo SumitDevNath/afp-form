@@ -317,6 +317,33 @@ export function convertDisplayDateToNative(value: string): string {
 }
 
 // ===== Merged source: afpScreening.utils.ts =====
+
+const AFP_MAX_ONSET_DAYS = 60;
+
+// Calculate completed calendar days since paralysis onset.
+export function getAFPOnsetAgeDays(value: string): number | null {
+  const onset = parseDisplayDate(value);
+
+  if (!onset) return null;
+
+  const today = new Date();
+
+  // UTC calendar dates prevent daylight-saving-time errors.
+  const utcOnset = Date.UTC(
+    onset.getFullYear(),
+    onset.getMonth(),
+    onset.getDate(),
+  );
+
+  const utcToday = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  return (utcToday - utcOnset) / 86_400_000;
+}
+
 export function getAFPScreeningStatus(
   clinicalInformation: AFPClinicalInformation,
 ): AFPScreeningStatus {
@@ -324,10 +351,12 @@ export function getAFPScreeningStatus(
     paralysisPresent,
     paralysisFlaccid,
     paralysisSuddenOnset,
+    paralysisOnsetDate,
     paralysisCausedByInjury,
     paralysisPresentAtBirth,
   } = clinicalInformation;
 
+  // Preserve existing disqualifying-answer logic.
   const hasDisqualifyingAnswer =
     paralysisPresent === "no" ||
     paralysisFlaccid === "no" ||
@@ -350,7 +379,16 @@ export function getAFPScreeningStatus(
     return "pending";
   }
 
-  return "eligible";
+  // NEW: Date of paralysis onset is part of screening.
+  const daysSinceOnset = getAFPOnsetAgeDays(paralysisOnsetDate);
+
+  // Missing, invalid, or future date.
+  if (daysSinceOnset === null || daysSinceOnset < 0) {
+    return "pending";
+  }
+
+  // Eligibility requires onset fewer than 60 days ago.
+  return daysSinceOnset < AFP_MAX_ONSET_DAYS ? "eligible" : "not_eligible";
 }
 
 // ===== Merged source: afpFacilities.ts =====
@@ -2471,13 +2509,49 @@ function ClinicalInformationSection() {
 
   // Update paralysis onset date
   const updateOnsetDate = (value: string) => {
-    updateData((previous) => ({
-      ...previous,
-      clinicalInformation: {
+    updateData((previous) => {
+      const nextClinicalInformation: AFPClinicalInformation = {
         ...previous.clinicalInformation,
         paralysisOnsetDate: value,
-      },
-    }));
+      };
+
+      const nextStatus = getAFPScreeningStatus(nextClinicalInformation);
+
+      const onsetAgeDays = getAFPOnsetAgeDays(value);
+
+      // Do not clear entered details while editing an
+      // incomplete date. Reset when the valid onset date
+      // confirms the case is outside the 60-day window.
+      const outsideWindow = onsetAgeDays !== null && onsetAgeDays >= 60;
+
+      return {
+        ...previous,
+        clinicalInformation: nextClinicalInformation,
+
+        screeningDiagnosis:
+          nextStatus === "not_eligible" ? previous.screeningDiagnosis : "",
+
+        signsSymptoms: outsideWindow
+          ? createInitialAFPSignsSymptoms()
+          : previous.signsSymptoms,
+
+        vaccinationHistory: outsideWindow
+          ? createInitialAFPVaccinationHistory()
+          : previous.vaccinationHistory,
+
+        travelHistory: outsideWindow
+          ? createInitialAFPTravelHistory()
+          : previous.travelHistory,
+
+        clinicalExamination: outsideWindow
+          ? createInitialAFPClinicalExamination()
+          : previous.clinicalExamination,
+
+        additionalInformation: outsideWindow
+          ? createInitialAFPAdditionalInformation()
+          : previous.additionalInformation,
+      };
+    });
   };
 
   // Update screening diagnosis
@@ -2534,9 +2608,10 @@ function ClinicalInformationSection() {
         <div className="mx-5 mb-5 rounded-lg border border-[#f0cf8c] bg-[#fff9ec] px-4 py-4 sm:mx-7 sm:px-5">
           <label
             htmlFor="afp-screening-diagnosis"
-            className="mb-2 block text-[13px] font-medium text-[#8a5a13]"
+            className="mb-2 block text-[16px] font-medium text-[#8a5a13]"
           >
-            Specify the diagnosis, if known:
+            Based on your answer, the Patient has not affected with Acute
+            Flaccid Paralysis. Specify the diagnosis, if known:
           </label>
 
           <TextField
