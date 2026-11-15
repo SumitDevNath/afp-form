@@ -9,7 +9,7 @@ import {
   useRef,
   Fragment,
 } from "react";
-import type { ReactNode, MouseEvent } from "react";
+import type { ReactNode, MouseEvent, CSSProperties } from "react";
 import {
   Box,
   Paper,
@@ -33,6 +33,266 @@ import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import FlightOutlinedIcon from "@mui/icons-material/FlightOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+
+// ===== AFP typography: role-based names, original values preserved =====
+// Change a role's value here without needing to rename any utility.
+// Roles are intentionally separate when their current styles differ.
+export const AFP_FONT_SIZE = {
+  // Form & common headings
+  submitButton: "0.85rem",
+  screeningGuidance: "0.875rem",
+  pageTitleMobile: "1.25rem",
+  pageTitleDesktop: "1.5rem",
+  pageSubtitle: "0.875rem",
+  developmentPanelTitle: "0.95rem",
+  developmentPanelDescription: "0.72rem",
+  developmentJsonPreview: "0.72rem",
+  sectionHeading: "18px",
+  panelHeading: "16px",
+
+  // Clinical information
+  clinicalQuestion: "13px",
+  clinicalDiagnosisLabel: "13px",
+  clinicalDiagnosisInput: "0.82rem",
+
+  // Signs & symptoms
+  signsFacilityFieldLabel: "11px",
+  signsQuestion: "13px",
+
+  // Vaccination history
+  vaccinationQuestion: "12px",
+  vaccinationSourceDropdown: "0.76rem",
+  vaccinationHeaderToggleLabel: "12px",
+  vaccinationHiddenNotice: "0.875rem",
+  vaccinationPostParalysisQuestion: "13px",
+  vaccinationPostParalysisDateLabel: "11px",
+
+  // Travel history
+  travelHeaderToggleLabel: "12px",
+  travelHiddenNotice: "0.875rem",
+  travelNotificationQuestion: "12px",
+  travelDateLabel: "12px",
+
+  // Reflex examination
+  reflexDiagramLabel: "9px",
+  reflexMobileFieldLabel: "12px",
+  reflexPanelSideBadge: "12px",
+  reflexMobileSideHeading: "0.875rem",
+  reflexDropdown: "0.72rem",
+  reflexDropdownOption: "0.78rem",
+  reflexDropdownValidation: "0.65rem",
+
+  // Muscle strength
+  muscleMobileColumnLabel: "10px",
+  muscleDesktopColumnLabel: "11px",
+  muscleFieldLabel: "12px",
+  muscleValidationMessage: "0.69rem",
+  muscleTableTitle: "13px",
+  muscleDropdown: "0.72rem",
+  muscleDropdownOption: "0.78rem",
+
+  // Previous healthcare contacts
+  contactFieldLabel: "12px",
+  contactSideLabel: "12px",
+  contactDropdownOption: "0.8rem",
+  contactCardHeading: "14px",
+  contactRemoveButton: "0.72rem",
+  contactAddButton: "0.78rem",
+  contactCategoryLabel: "12px",
+
+  // Additional information
+  additionalInformationDependentLabel: "12px",
+  additionalInformationQuestion: "13px",
+  additionalInformationToggleLabel: "12px",
+  additionalInformationError: "0.75rem",
+  additionalInformationNotice: "12px",
+
+  // Shared form inputs & feedback
+  textInput: "0.78rem",
+  standardDropdown: "0.78rem",
+  standardDropdownOption: "0.82rem",
+  checkboxLabel: "0.75rem",
+  dateHelperText: "0.75rem",
+  dateInput: "0.78rem",
+  inlineFieldError: "0.75rem",
+  numberInput: "0.8rem",
+  validatedFieldError: "0.75rem",
+  yesNoButton: "0.75rem",
+  yesNoPendingButton: "0.72rem",
+  yesNoUnknownButton: "0.72rem",
+} as const;
+
+export const AFP_FONT_WEIGHT = {
+  // Form & common headings
+  submitButton: 700,
+  pageTitle: 700,
+  developmentPanelTitle: 700,
+  sectionHeading: 700,
+  panelHeading: 700,
+
+  // Clinical information
+  clinicalQuestion: 600,
+  clinicalDiagnosisLabel: 500,
+  clinicalDiagnosisInput: 400,
+
+  // Signs & symptoms
+  signsFacilityFieldLabel: 600,
+  signsQuestion: 600,
+
+  // Vaccination history
+  vaccinationQuestion: 600,
+  vaccinationSourceDropdown: 400,
+  vaccinationHeaderToggleLabel: 600,
+  vaccinationPostParalysisQuestion: 600,
+  vaccinationPostParalysisDateLabel: 600,
+
+  // Travel history
+  travelHeaderToggleLabel: 600,
+  travelNotificationQuestion: 600,
+  travelDateLabel: 600,
+
+  // Reflex examination
+  reflexDiagramLabel: 600,
+  reflexMobileFieldLabel: 600,
+  reflexPanelSideBadge: 700,
+  reflexMobileSideHeading: 700,
+  reflexDropdown: 400,
+  reflexDropdownOption: 400,
+
+  // Muscle strength
+  muscleMobileColumnLabel: 600,
+  muscleDesktopColumnLabel: 700,
+  muscleFieldLabel: 600,
+  muscleTableTitle: 700,
+  muscleDropdown: 400,
+  muscleDropdownOption: 400,
+
+  // Previous healthcare contacts
+  contactFieldLabel: 600,
+  contactSideLabel: 600,
+  contactDropdownOption: 400,
+  contactCardHeading: 700,
+  contactAddButton: 700,
+  contactCategoryLabel: 600,
+
+  // Additional information
+  additionalInformationDependentLabel: 600,
+  additionalInformationQuestion: 700,
+  additionalInformationToggleLabel: 600,
+  additionalInformationNotice: 600,
+
+  // Shared form inputs & feedback
+  textInput: 400,
+  standardDropdown: 400,
+  standardDropdownOption: 400,
+  dateInput: 400,
+  numberInput: 400,
+  yesNoButton: 500,
+  yesNoButtonSelected: 600,
+  yesNoPendingButton: 500,
+  yesNoPendingButtonSelected: 600,
+  yesNoUnknownButton: 500,
+  yesNoUnknownButtonSelected: 600,
+} as const;
+
+// Scoped variables power existing Tailwind utilities; MUI sx uses the constants.
+const AFP_TYPOGRAPHY_VARIABLES = {
+  "--afp-font-size-screening-guidance": AFP_FONT_SIZE.screeningGuidance,
+  "--afp-font-size-section-heading": AFP_FONT_SIZE.sectionHeading,
+  "--afp-font-size-panel-heading": AFP_FONT_SIZE.panelHeading,
+  "--afp-font-size-additional-information-question":
+    AFP_FONT_SIZE.additionalInformationQuestion,
+  "--afp-font-size-additional-information-dependent-label":
+    AFP_FONT_SIZE.additionalInformationDependentLabel,
+  "--afp-font-size-additional-information-toggle-label":
+    AFP_FONT_SIZE.additionalInformationToggleLabel,
+  "--afp-font-size-additional-information-notice":
+    AFP_FONT_SIZE.additionalInformationNotice,
+  "--afp-font-size-clinical-question": AFP_FONT_SIZE.clinicalQuestion,
+  "--afp-font-size-clinical-diagnosis-label":
+    AFP_FONT_SIZE.clinicalDiagnosisLabel,
+  "--afp-font-size-muscle-mobile-column-label":
+    AFP_FONT_SIZE.muscleMobileColumnLabel,
+  "--afp-font-size-muscle-desktop-column-label":
+    AFP_FONT_SIZE.muscleDesktopColumnLabel,
+  "--afp-font-size-muscle-field-label": AFP_FONT_SIZE.muscleFieldLabel,
+  "--afp-font-size-muscle-table-title": AFP_FONT_SIZE.muscleTableTitle,
+  "--afp-font-size-contact-field-label": AFP_FONT_SIZE.contactFieldLabel,
+  "--afp-font-size-contact-side-label": AFP_FONT_SIZE.contactSideLabel,
+  "--afp-font-size-contact-category-label": AFP_FONT_SIZE.contactCategoryLabel,
+  "--afp-font-size-contact-card-heading": AFP_FONT_SIZE.contactCardHeading,
+  "--afp-font-size-reflex-diagram-label": AFP_FONT_SIZE.reflexDiagramLabel,
+  "--afp-font-size-reflex-mobile-field-label":
+    AFP_FONT_SIZE.reflexMobileFieldLabel,
+  "--afp-font-size-reflex-panel-side-badge": AFP_FONT_SIZE.reflexPanelSideBadge,
+  "--afp-font-size-reflex-mobile-side-heading":
+    AFP_FONT_SIZE.reflexMobileSideHeading,
+  "--afp-font-size-signs-facility-field-label":
+    AFP_FONT_SIZE.signsFacilityFieldLabel,
+  "--afp-font-size-signs-question": AFP_FONT_SIZE.signsQuestion,
+  "--afp-font-size-travel-header-toggle-label":
+    AFP_FONT_SIZE.travelHeaderToggleLabel,
+  "--afp-font-size-travel-hidden-notice": AFP_FONT_SIZE.travelHiddenNotice,
+  "--afp-font-size-travel-notification-question":
+    AFP_FONT_SIZE.travelNotificationQuestion,
+  "--afp-font-size-travel-date-label": AFP_FONT_SIZE.travelDateLabel,
+  "--afp-font-size-vaccination-question": AFP_FONT_SIZE.vaccinationQuestion,
+  "--afp-font-size-vaccination-header-toggle-label":
+    AFP_FONT_SIZE.vaccinationHeaderToggleLabel,
+  "--afp-font-size-vaccination-hidden-notice":
+    AFP_FONT_SIZE.vaccinationHiddenNotice,
+  "--afp-font-size-vaccination-post-paralysis-question":
+    AFP_FONT_SIZE.vaccinationPostParalysisQuestion,
+  "--afp-font-size-vaccination-post-paralysis-date-label":
+    AFP_FONT_SIZE.vaccinationPostParalysisDateLabel,
+  "--afp-font-size-inline-field-error": AFP_FONT_SIZE.inlineFieldError,
+  "--afp-font-weight-section-heading": AFP_FONT_WEIGHT.sectionHeading,
+  "--afp-font-weight-panel-heading": AFP_FONT_WEIGHT.panelHeading,
+  "--afp-font-weight-additional-information-question":
+    AFP_FONT_WEIGHT.additionalInformationQuestion,
+  "--afp-font-weight-additional-information-dependent-label":
+    AFP_FONT_WEIGHT.additionalInformationDependentLabel,
+  "--afp-font-weight-additional-information-toggle-label":
+    AFP_FONT_WEIGHT.additionalInformationToggleLabel,
+  "--afp-font-weight-additional-information-notice":
+    AFP_FONT_WEIGHT.additionalInformationNotice,
+  "--afp-font-weight-clinical-question": AFP_FONT_WEIGHT.clinicalQuestion,
+  "--afp-font-weight-clinical-diagnosis-label":
+    AFP_FONT_WEIGHT.clinicalDiagnosisLabel,
+  "--afp-font-weight-muscle-mobile-column-label":
+    AFP_FONT_WEIGHT.muscleMobileColumnLabel,
+  "--afp-font-weight-muscle-desktop-column-label":
+    AFP_FONT_WEIGHT.muscleDesktopColumnLabel,
+  "--afp-font-weight-muscle-field-label": AFP_FONT_WEIGHT.muscleFieldLabel,
+  "--afp-font-weight-muscle-table-title": AFP_FONT_WEIGHT.muscleTableTitle,
+  "--afp-font-weight-contact-field-label": AFP_FONT_WEIGHT.contactFieldLabel,
+  "--afp-font-weight-contact-side-label": AFP_FONT_WEIGHT.contactSideLabel,
+  "--afp-font-weight-contact-category-label":
+    AFP_FONT_WEIGHT.contactCategoryLabel,
+  "--afp-font-weight-contact-card-heading": AFP_FONT_WEIGHT.contactCardHeading,
+  "--afp-font-weight-reflex-diagram-label": AFP_FONT_WEIGHT.reflexDiagramLabel,
+  "--afp-font-weight-reflex-mobile-field-label":
+    AFP_FONT_WEIGHT.reflexMobileFieldLabel,
+  "--afp-font-weight-reflex-panel-side-badge":
+    AFP_FONT_WEIGHT.reflexPanelSideBadge,
+  "--afp-font-weight-reflex-mobile-side-heading":
+    AFP_FONT_WEIGHT.reflexMobileSideHeading,
+  "--afp-font-weight-signs-facility-field-label":
+    AFP_FONT_WEIGHT.signsFacilityFieldLabel,
+  "--afp-font-weight-signs-question": AFP_FONT_WEIGHT.signsQuestion,
+  "--afp-font-weight-travel-header-toggle-label":
+    AFP_FONT_WEIGHT.travelHeaderToggleLabel,
+  "--afp-font-weight-travel-notification-question":
+    AFP_FONT_WEIGHT.travelNotificationQuestion,
+  "--afp-font-weight-travel-date-label": AFP_FONT_WEIGHT.travelDateLabel,
+  "--afp-font-weight-vaccination-question": AFP_FONT_WEIGHT.vaccinationQuestion,
+  "--afp-font-weight-vaccination-header-toggle-label":
+    AFP_FONT_WEIGHT.vaccinationHeaderToggleLabel,
+  "--afp-font-weight-vaccination-post-paralysis-question":
+    AFP_FONT_WEIGHT.vaccinationPostParalysisQuestion,
+  "--afp-font-weight-vaccination-post-paralysis-date-label":
+    AFP_FONT_WEIGHT.vaccinationPostParalysisDateLabel,
+} as CSSProperties;
 
 // ===== Merged source: afp.types(1).ts =====
 export type YesNo = "yes" | "no" | null;
@@ -1624,8 +1884,8 @@ function AFPSubmitButton() {
           px: 3,
           borderRadius: "8px",
           textTransform: "none",
-          fontSize: "0.85rem",
-          fontWeight: 700,
+          fontSize: AFP_FONT_SIZE.submitButton,
+          fontWeight: AFP_FONT_WEIGHT.submitButton,
           bgcolor: isComplete ? "success.main" : "#173b69",
           transform: isComplete ? "scale(1.04)" : "scale(1)",
           transition: "background-color 180ms, transform 180ms",
@@ -1656,7 +1916,7 @@ function AFPFormContent({
   const screeningStatus = getAFPScreeningStatus(data.clinicalInformation);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" style={AFP_TYPOGRAPHY_VARIABLES}>
       <ClinicalInformationSection />
 
       {screeningStatus === "pending" && (
@@ -1668,7 +1928,7 @@ function AFPFormContent({
             bg-white
             px-4
             py-3
-            text-sm
+            text-(length:--afp-font-size-screening-guidance) leading-5
             text-[#64748b]
           "
         >
@@ -1746,6 +2006,7 @@ export default function AFPDemoPage() {
   return (
     <Box
       component="main"
+      style={AFP_TYPOGRAPHY_VARIABLES}
       className="
         mx-auto
         w-full
@@ -1762,10 +2023,10 @@ export default function AFPDemoPage() {
           sx={{
             color: "#173b69",
             fontSize: {
-              xs: "1.25rem",
-              sm: "1.5rem",
+              xs: AFP_FONT_SIZE.pageTitleMobile,
+              sm: AFP_FONT_SIZE.pageTitleDesktop,
             },
-            fontWeight: 700,
+            fontWeight: AFP_FONT_WEIGHT.pageTitle,
           }}
         >
           Acute Flaccid Paralysis (AFP)
@@ -1775,7 +2036,7 @@ export default function AFPDemoPage() {
           sx={{
             mt: 0.5,
             color: "#64748b",
-            fontSize: "0.875rem",
+            fontSize: AFP_FONT_SIZE.pageSubtitle,
           }}
         >
           Case Investigation Form — Frontend Part
@@ -1809,8 +2070,8 @@ export default function AFPDemoPage() {
             component="h2"
             sx={{
               color: "#173b69",
-              fontSize: "0.95rem",
-              fontWeight: 700,
+              fontSize: AFP_FONT_SIZE.developmentPanelTitle,
+              fontWeight: AFP_FONT_WEIGHT.developmentPanelTitle,
             }}
           >
             Development State
@@ -1820,7 +2081,7 @@ export default function AFPDemoPage() {
             sx={{
               mt: 0.25,
               color: "#64748b",
-              fontSize: "0.72rem",
+              fontSize: AFP_FONT_SIZE.developmentPanelDescription,
             }}
           >
             Frontend-only JSON preview. This is not an API payload.
@@ -1837,7 +2098,7 @@ export default function AFPDemoPage() {
             backgroundColor: "#0f172a",
             color: "#e2e8f0",
             fontFamily: "Consolas, 'Courier New', monospace",
-            fontSize: "0.72rem",
+            fontSize: AFP_FONT_SIZE.developmentJsonPreview,
             lineHeight: 1.55,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
@@ -1881,7 +2142,8 @@ interface QuestionCardProps {
 // SHARED STYLING — UNCHANGED
 // =========================================================
 
-const dependentLabelClass = "pt-2 text-[12px] font-semibold text-[#173b69]";
+const dependentLabelClass =
+  "pt-2 text-(length:--afp-font-size-additional-information-dependent-label) font-(--afp-font-weight-additional-information-dependent-label) text-[#173b69]";
 
 const countRowClass =
   "grid gap-2 sm:grid-cols-[max-content_140px] sm:items-start";
@@ -1938,7 +2200,7 @@ function QuestionCard({
           <FieldLabel
             fieldId={fieldId}
             component="p"
-            className="m-0 pt-2 text-[13px] font-bold leading-5 text-[#173b69]"
+            className="m-0 pt-2 text-(length:--afp-font-size-additional-information-question) font-(--afp-font-weight-additional-information-question) leading-5 text-[#173b69]"
           >
             {number}. {label}
           </FieldLabel>
@@ -2117,7 +2379,7 @@ function AdditionalInformationSection() {
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
       <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
           Additional Information
         </h2>
       </div>
@@ -2143,7 +2405,7 @@ function AdditionalInformationSection() {
                 {/* ADDITIONAL AFP CASES TOGGLE */}
 
                 <div className="flex flex-col gap-3 border-b border-[#d6e3f0] pb-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-[12px] font-semibold leading-5 text-[#173b69]">
+                  <p className="text-(length:--afp-font-size-additional-information-toggle-label) font-(--afp-font-weight-additional-information-toggle-label) leading-5 text-[#173b69]">
                     Additional AFP cases identified?
                   </p>
 
@@ -2217,7 +2479,7 @@ function AdditionalInformationSection() {
                 <FieldLabel
                   fieldId={explanationId}
                   htmlFor="afp-ori-explanation"
-                  className="text-[12px] font-semibold leading-5 text-[#173b69]"
+                  className="text-(length:--afp-font-size-additional-information-dependent-label) font-(--afp-font-weight-additional-information-dependent-label) leading-5 text-[#173b69]"
                 >
                   Please explain why outbreak response immunization was not done
                 </FieldLabel>
@@ -2247,7 +2509,7 @@ function AdditionalInformationSection() {
                         sx: {
                           m: 0,
                           mt: 1,
-                          fontSize: "0.75rem",
+                          fontSize: AFP_FONT_SIZE.additionalInformationError,
                           lineHeight: 1.5,
                           whiteSpace: "nowrap",
                         },
@@ -2262,7 +2524,8 @@ function AdditionalInformationSection() {
 
                       "& input": {
                         py: "8px",
-                        fontSize: "0.78rem",
+                        fontSize: AFP_FONT_SIZE.textInput,
+                        fontWeight: AFP_FONT_WEIGHT.textInput,
                       },
                     }}
                   />
@@ -2277,7 +2540,7 @@ function AdditionalInformationSection() {
            =============================================== */}
 
         <div className="mt-5 rounded-lg border border-[#f0c97d] bg-[#fff8e9] px-4 py-3 sm:px-5">
-          <p className="m-0 text-[12px] font-semibold leading-5 text-[#8a5811]">
+          <p className="m-0 text-(length:--afp-font-size-additional-information-notice) font-(--afp-font-weight-additional-information-notice) leading-5 text-[#8a5811]">
             If the answer to the question no 1 or 2 is Pending, complete
             activities within 7 days of AFP confirmation and share the updated
             form with EPI HQ.
@@ -2294,7 +2557,7 @@ function ClinicalExaminationSection() {
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
       <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
           Clinical Examination
         </h2>
       </div>
@@ -2376,7 +2639,7 @@ const questionRowClass =
   "grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start";
 
 const questionLabelClass =
-  "m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]";
+  "m-0 pt-1 text-(length:--afp-font-size-clinical-question) font-(--afp-font-weight-clinical-question) leading-5 text-[#173b69]";
 
 // Reusable Yes/No question
 function ClinicalYesNoQuestion({
@@ -2433,7 +2696,7 @@ function ClinicalDateQuestion({
         <FieldLabel
           component="p"
           fieldId="clinicalInformation.paralysisOnsetDate"
-          className="m-0 pt-2 text-[13px] font-semibold leading-5 text-[#173b69]"
+          className="m-0 pt-2 text-(length:--afp-font-size-clinical-question) font-(--afp-font-weight-clinical-question) leading-5 text-[#173b69]"
         >
           4. Date of paralysis onset
         </FieldLabel>
@@ -2568,7 +2831,7 @@ function ClinicalInformationSection() {
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
       <div className="border-b border-[#e0e8f0] px-5 py-3 sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
           Clinical Information
         </h2>
       </div>
@@ -2596,7 +2859,7 @@ function ClinicalInformationSection() {
         <div className="mx-5 mb-5 rounded-lg border border-[#f0cf8c] bg-[#fff9ec] px-4 py-4 sm:mx-7 sm:px-5">
           <label
             htmlFor="afp-screening-diagnosis"
-            className="mb-2 block text-[13px] font-medium text-[#8a5a13]"
+            className="mb-2 block text-(length:--afp-font-size-clinical-diagnosis-label) font-(--afp-font-weight-clinical-diagnosis-label) text-[#8a5a13]"
           >
             Bases on your answer the case is not affected with AFP. Specify the
             diagnosis, if known:
@@ -2622,7 +2885,8 @@ function ClinicalInformationSection() {
                 backgroundColor: "#ffffff",
               },
               "& input": {
-                fontSize: "0.82rem",
+                fontSize: AFP_FONT_SIZE.clinicalDiagnosisInput,
+                fontWeight: AFP_FONT_WEIGHT.clinicalDiagnosisInput,
               },
             }}
           />
@@ -2672,10 +2936,10 @@ const tableGridClass =
   "grid grid-cols-1 sm:grid-cols-[minmax(130px,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[105px_minmax(0,1fr)_minmax(0,1fr)] xl:gap-x-1";
 
 const mobileSideLabelClass =
-  "mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[#64748b] sm:hidden";
+  "mb-1 block text-(length:--afp-font-size-muscle-mobile-column-label) font-(--afp-font-weight-muscle-mobile-column-label) uppercase tracking-wide text-[#64748b] sm:hidden";
 
 const desktopSideLabelClass =
-  "hidden text-center text-[11px] font-bold uppercase tracking-wide text-[#52677e] sm:block";
+  "hidden text-center text-(length:--afp-font-size-muscle-desktop-column-label) font-(--afp-font-weight-muscle-desktop-column-label) uppercase tracking-wide text-[#52677e] sm:block";
 
 // =========================================================
 // MUSCLE STRENGTH ROW — MUI v9 VALIDATION
@@ -2697,7 +2961,7 @@ function MuscleStrengthRow({
         <FieldLabel
           component="span"
           fieldId={`${fieldId}.right`}
-          className="text-[12px] font-semibold text-[#334155]"
+          className="text-(length:--afp-font-size-muscle-field-label) font-(--afp-font-weight-muscle-field-label) text-[#334155]"
         >
           {label}
         </FieldLabel>
@@ -2759,7 +3023,7 @@ function MuscleStrengthRow({
                 sx={{
                   m: 0,
                   mt: 0.75,
-                  fontSize: "0.69rem",
+                  fontSize: AFP_FONT_SIZE.muscleValidationMessage,
                   lineHeight: 1.3,
                   whiteSpace: "nowrap",
                 }}
@@ -2784,7 +3048,9 @@ function MuscleStrengthTable({ title, children }: MuscleStrengthTableProps) {
       <div
         className={`${tableGridClass} bg-[#eef5fc] px-3 py-3 sm:items-center sm:px-4`}
       >
-        <h4 className="m-0 text-[13px] font-bold text-[#173b69]">{title}</h4>
+        <h4 className="m-0 text-(length:--afp-font-size-muscle-table-title) font-(--afp-font-weight-muscle-table-title) text-[#173b69]">
+          {title}
+        </h4>
 
         {sides.map(({ key, title: heading }) => (
           <span key={key} className={desktopSideLabelClass}>
@@ -2852,7 +3118,7 @@ function MuscleStrengthSection() {
 
   return (
     <div className="h-full min-w-0 self-stretch rounded-xl border border-[#d9e5f1] bg-[#f8fbff] p-4 sm:p-5">
-      <h3 className="m-0 mb-4 text-[16px] font-bold text-[#173b69]">
+      <h3 className="m-0 mb-4 text-(length:--afp-font-size-panel-heading) font-(--afp-font-weight-panel-heading) text-[#173b69]">
         Muscle Strength
       </h3>
 
@@ -2959,15 +3225,17 @@ interface OptionsSelectProps {
 // =========================================================
 
 const contactLabelClass =
-  "mb-1.5 block text-[12px] font-semibold text-[#173b69]";
+  "mb-1.5 block text-(length:--afp-font-size-contact-field-label) font-(--afp-font-weight-contact-field-label) text-[#173b69]";
 
-const sideLabelClass = "mb-1.5 block text-[12px] font-semibold text-[#617996]";
+const sideLabelClass =
+  "mb-1.5 block text-(length:--afp-font-size-contact-side-label) font-(--afp-font-weight-contact-side-label) text-[#617996]";
 
 const selectSx = {
   minHeight: 40,
   borderRadius: "7px",
   backgroundColor: "#ffffff",
-  fontSize: "0.78rem",
+  fontSize: AFP_FONT_SIZE.standardDropdown,
+  fontWeight: AFP_FONT_WEIGHT.standardDropdown,
 };
 
 const errorSpacing = "[&_.MuiFormHelperText-root]:mt-2!";
@@ -3050,10 +3318,12 @@ function CompactTextField({
           backgroundColor: "#ffffff",
         },
         "& input": {
-          fontSize: "0.78rem",
+          fontSize: AFP_FONT_SIZE.textInput,
+          fontWeight: AFP_FONT_WEIGHT.textInput,
         },
         "& textarea": {
-          fontSize: "0.78rem",
+          fontSize: AFP_FONT_SIZE.textInput,
+          fontWeight: AFP_FONT_WEIGHT.textInput,
           lineHeight: 1.5,
         },
       }}
@@ -3103,7 +3373,8 @@ function OptionsSelect({
                 ...(wrapMenuItems ? { maxWidth: 420 } : {}),
                 "& .MuiMenuItem-root": {
                   ...(wrapMenuItems ? { whiteSpace: "normal" } : {}),
-                  fontSize: "0.8rem",
+                  fontSize: AFP_FONT_SIZE.contactDropdownOption,
+                  fontWeight: AFP_FONT_WEIGHT.contactDropdownOption,
                 },
               },
             },
@@ -3202,7 +3473,7 @@ function ContactBlock({
   return (
     <div className="w-full min-w-0 rounded-xl border border-[#d8e5f2] bg-[#f8fbff] p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h4 className="m-0 text-[14px] font-bold text-[#173b69]">
+        <h4 className="m-0 text-(length:--afp-font-size-contact-card-heading) font-(--afp-font-weight-contact-card-heading) text-[#173b69]">
           Contact {contactNumber}
         </h4>
 
@@ -3215,7 +3486,7 @@ function ContactBlock({
             size="small"
             sx={{
               color: "#b42318",
-              fontSize: "0.72rem",
+              fontSize: AFP_FONT_SIZE.contactRemoveButton,
               textTransform: "none",
               "&:hover": {
                 backgroundColor: "#fff1f0",
@@ -3460,7 +3731,7 @@ function PreviousHealthcareContactsSection({
       {/* SECTION HEADER */}
 
       <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold uppercase leading-6 text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) uppercase leading-6 text-[#173b69]">
           History of Previous Contacts with Health Care Providers After Date of
           Paralysis Onset
         </h2>
@@ -3471,7 +3742,7 @@ function PreviousHealthcareContactsSection({
 
         <div className="mx-0 w-full overflow-hidden border border-[#d8e5f2] bg-white">
           <div className="flex flex-col gap-3 border-b border-[#d8e5f2] bg-[#f8fbff] px-4 py-3 sm:flex-row sm:items-center">
-            <h3 className="m-0 text-[16px] font-bold text-[#2563b8]">
+            <h3 className="m-0 text-(length:--afp-font-size-panel-heading) font-(--afp-font-weight-panel-heading) text-[#2563b8]">
               CONTACTS
             </h3>
 
@@ -3486,8 +3757,8 @@ function PreviousHealthcareContactsSection({
                 backgroundColor: "#2864d7",
                 px: 2.5,
                 py: 0.9,
-                fontSize: "0.78rem",
-                fontWeight: 700,
+                fontSize: AFP_FONT_SIZE.contactAddButton,
+                fontWeight: AFP_FONT_WEIGHT.contactAddButton,
                 textTransform: "none",
                 boxShadow: "none",
                 "&:hover": {
@@ -3551,7 +3822,7 @@ function PreviousHealthcareContactsSection({
             >
               <FieldLabel
                 fieldId={categoryId}
-                className="mb-1.5 block text-[12px] font-semibold text-[#355b88]"
+                className="mb-1.5 block text-(length:--afp-font-size-contact-category-label) font-(--afp-font-weight-contact-category-label) text-[#355b88]"
               >
                 Category of the first contact:
               </FieldLabel>
@@ -3755,9 +4026,10 @@ const sides_Reflexes = [
 // =========================================================
 
 const attachedLabelClass =
-  "mb-0 block px-1 py-0 text-center text-[9px] font-semibold leading-[11px] text-[#173b69]";
+  "mb-0 block px-1 py-0 text-center text-(length:--afp-font-size-reflex-diagram-label) font-(--afp-font-weight-reflex-diagram-label) leading-[11px] text-[#173b69]";
 
-const mobileLabelClass = "text-[12px] font-semibold text-[#173b69]";
+const mobileLabelClass =
+  "text-(length:--afp-font-size-reflex-mobile-field-label) font-(--afp-font-weight-reflex-mobile-field-label) text-[#173b69]";
 
 // Preserve original anatomical positioning.
 function getDropdownTop(anchorY: number): number {
@@ -3894,7 +4166,7 @@ function ReflexesSection() {
 
   return (
     <div className="min-w-0 rounded-xl border border-[#d9e5f1] bg-[#f8fbff] p-4 sm:p-5">
-      <h3 className="m-0 mb-4 text-[16px] font-bold text-[#173b69]">
+      <h3 className="m-0 mb-4 text-(length:--afp-font-size-panel-heading) font-(--afp-font-weight-panel-heading) text-[#173b69]">
         Reflexes
       </h3>
 
@@ -3910,11 +4182,11 @@ function ReflexesSection() {
         }}
       >
         {/* SIDE HEADINGS */}
-        <span className="absolute left-0 top-0 z-20 rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+        <span className="absolute left-0 top-0 z-20 rounded-md bg-[#eaf3ff] px-2 py-1 text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]">
           RT
         </span>
 
-        <span className="absolute right-0 top-0 z-20 rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+        <span className="absolute right-0 top-0 z-20 rounded-md bg-[#eaf3ff] px-2 py-1 text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]">
           LT
         </span>
 
@@ -3990,11 +4262,11 @@ function ReflexesSection() {
       <div className="md:hidden">
         <div className="mx-auto mb-6 w-full max-w-56">
           <div className="mb-2 flex justify-between">
-            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]">
               RT
             </span>
 
-            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-[12px] font-bold text-[#1752a0]">
+            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]">
               LT
             </span>
           </div>
@@ -4013,7 +4285,7 @@ function ReflexesSection() {
                 index === 1 ? "border-t border-[#dbe6f1] pt-5" : undefined
               }
             >
-              <h4 className="mb-3 text-sm font-bold text-[#173b69]">
+              <h4 className="mb-3 text-(length:--afp-font-size-reflex-mobile-side-heading) leading-5 font-(--afp-font-weight-reflex-mobile-side-heading) text-[#173b69]">
                 {side.heading}
               </h4>
 
@@ -4143,7 +4415,8 @@ const paralysisSiteOptions: {
   { value: "face", label: "Face" },
 ];
 
-const fieldLabelClass = "mb-1.5 block text-[11px] font-semibold text-[#52677e]";
+const fieldLabelClass =
+  "mb-1.5 block text-(length:--afp-font-size-signs-facility-field-label) font-(--afp-font-weight-signs-facility-field-label) text-[#52677e]";
 
 const facilityTextFieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -4153,7 +4426,8 @@ const facilityTextFieldSx = {
   },
   "& input": {
     py: "7px",
-    fontSize: "0.78rem",
+    fontSize: AFP_FONT_SIZE.textInput,
+    fontWeight: AFP_FONT_WEIGHT.textInput,
   },
 };
 
@@ -4166,7 +4440,8 @@ const otherParalysisTextFieldSx = {
 
   "& input": {
     py: "8px",
-    fontSize: "0.78rem",
+    fontSize: AFP_FONT_SIZE.textInput,
+    fontWeight: AFP_FONT_WEIGHT.textInput,
   },
 };
 
@@ -4193,7 +4468,7 @@ function QuestionRow({
         <FieldLabel
           fieldId={fieldId}
           component="p"
-          className="m-0 pt-1 text-[13px] font-semibold leading-5 text-[#173b69]"
+          className="m-0 pt-1 text-(length:--afp-font-size-signs-question) font-(--afp-font-weight-signs-question) leading-5 text-[#173b69]"
         >
           {number}. {label}
         </FieldLabel>
@@ -4347,7 +4622,7 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
       <div className="border-b border-[#e0e8f0] px-5 py-3 sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
           Signs / Symptoms
         </h2>
       </div>
@@ -4391,7 +4666,7 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
               <FieldLabel
                 component="p"
                 fieldId="signsSymptoms.siteOfParalysis"
-                className="m-0 mb-4 text-[13px] font-semibold text-[#173b69]"
+                className="m-0 mb-4 text-(length:--afp-font-size-signs-question) font-(--afp-font-weight-signs-question) text-[#173b69]"
               >
                 3. SITE OF PARALYSIS
               </FieldLabel>
@@ -4719,12 +4994,12 @@ function TravelHistorySection() {
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
       <div className="flex flex-col gap-3 border-b border-[#dce7f2] px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
           Travel History
         </h2>
 
         <div className="flex w-fit max-w-full items-center gap-2 rounded-xl bg-[#deebfb] px-3 py-1.5">
-          <span className="text-[12px] font-semibold leading-4 text-[#173b69]">
+          <span className="text-(length:--afp-font-size-travel-header-toggle-label) font-(--afp-font-weight-travel-header-toggle-label) leading-4 text-[#173b69]">
             Travel outside area in last 30 days?
           </span>
 
@@ -4748,7 +5023,7 @@ function TravelHistorySection() {
 
       {/* TRAVEL HISTORY CONTENT */}
       {!travelHistory.travelOutsideAreaLast30Days ? (
-        <div className="px-5 py-6 text-sm text-[#718096] sm:px-7">
+        <div className="px-5 py-6 text-(length:--afp-font-size-travel-hidden-notice) leading-5 text-[#718096] sm:px-7">
           Travel history details are currently hidden.
         </div>
       ) : (
@@ -4756,7 +5031,7 @@ function TravelHistorySection() {
           {/* AFP-SPECIFIC DSFP / SIMO FIELD */}
           <div className="mt-5 max-w-140 rounded-lg border border-[#cbdced] bg-[#eff6ff] px-4 py-4 sm:px-5">
             <div className="flex flex-col gap-3 border-b border-[#d6e3f0] pb-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="m-0 text-[12px] font-semibold leading-5 text-[#173b69]">
+              <p className="m-0 text-(length:--afp-font-size-travel-notification-question) font-(--afp-font-weight-travel-notification-question) leading-5 text-[#173b69]">
                 Notified to concerned DSFP / SIMO (for additional cases and
                 ORI)?
               </p>
@@ -4778,7 +5053,7 @@ function TravelHistorySection() {
               <div className="mt-4 grid gap-2 sm:grid-cols-[max-content_190px] sm:items-start">
                 <FieldLabel
                   fieldId={notificationDateFieldId}
-                  className="pt-2 text-[12px] font-semibold text-[#173b69]"
+                  className="pt-2 text-(length:--afp-font-size-travel-date-label) font-(--afp-font-weight-travel-date-label) text-[#173b69]"
                 >
                   Date of notification
                 </FieldLabel>
@@ -4891,7 +5166,7 @@ const dateQuestions: QuestionConfig<VaccinationDateField>[] = [
 // =========================================================
 
 const questionLabelClass_VaccinationHistory =
-  "m-0 pt-2 text-[12px] font-semibold leading-5 text-[#173b69]";
+  "m-0 pt-2 text-(length:--afp-font-size-vaccination-question) font-(--afp-font-weight-vaccination-question) leading-5 text-[#173b69]";
 
 const questionRowClass_VaccinationHistory =
   "grid gap-3 border-b border-[#e3ebf3] py-4 md:items-start";
@@ -4900,7 +5175,8 @@ const recordSourceSelectSx = {
   minHeight: 38,
   borderRadius: "8px",
   backgroundColor: "#ffffff",
-  fontSize: "0.76rem",
+  fontSize: AFP_FONT_SIZE.vaccinationSourceDropdown,
+  fontWeight: AFP_FONT_WEIGHT.vaccinationSourceDropdown,
 
   "& .MuiOutlinedInput-notchedOutline": {
     borderColor: "#b9c8d8",
@@ -4980,7 +5256,10 @@ function RecordSourceSelect({
           <MenuItem
             key={option.value}
             value={option.value}
-            sx={{ fontSize: "0.82rem" }}
+            sx={{
+              fontSize: AFP_FONT_SIZE.standardDropdownOption,
+              fontWeight: AFP_FONT_WEIGHT.standardDropdownOption,
+            }}
           >
             {option.label}
           </MenuItem>
@@ -5223,12 +5502,12 @@ function VaccinationHistorySection() {
     <section className="overflow-hidden rounded-xl border border-[#d4e2ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       {/* SECTION HEADER */}
       <div className="flex flex-col gap-3 border-b border-[#dce7f2] px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-        <h2 className="m-0 text-[18px] font-bold text-[#173b69]">
+        <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
           Vaccination History
         </h2>
 
         <div className="flex w-fit items-center gap-2 rounded-xl bg-[#deebfb] px-3 py-1.5">
-          <span className="text-[12px] font-semibold text-[#173b69]">
+          <span className="text-(length:--afp-font-size-vaccination-header-toggle-label) font-(--afp-font-weight-vaccination-header-toggle-label) text-[#173b69]">
             Vaccination history available?
           </span>
 
@@ -5243,7 +5522,7 @@ function VaccinationHistorySection() {
 
       {/* VACCINATION QUESTIONS */}
       {!vaccination.available ? (
-        <div className="px-5 py-6 text-sm text-[#718096] sm:px-7">
+        <div className="px-5 py-6 text-(length:--afp-font-size-vaccination-hidden-notice) leading-5 text-[#718096] sm:px-7">
           Vaccination history is currently marked as unavailable.
         </div>
       ) : (
@@ -5316,7 +5595,7 @@ function VaccinationHistorySection() {
                   <FieldLabel
                     fieldId={q6FieldId}
                     component="p"
-                    className="m-0 text-[13px] font-semibold leading-5 text-[#173b69]"
+                    className="m-0 text-(length:--afp-font-size-vaccination-post-paralysis-question) font-(--afp-font-weight-vaccination-post-paralysis-question) leading-5 text-[#173b69]"
                   >
                     6. Was OPV given after paralysis onset?
                   </FieldLabel>
@@ -5342,7 +5621,7 @@ function VaccinationHistorySection() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                     <FieldLabel
                       fieldId={opvAfterDateFieldId}
-                      className="text-[11px] font-semibold text-[#52677e]"
+                      className="text-(length:--afp-font-size-vaccination-post-paralysis-date-label) font-(--afp-font-weight-vaccination-post-paralysis-date-label) text-[#52677e]"
                     >
                       Date of the OPV
                     </FieldLabel>
@@ -5440,7 +5719,8 @@ function MuscleStrengthSelect({
           minHeight: 38,
           borderRadius: "7px",
           backgroundColor: "#ffffff",
-          fontSize: "0.72rem",
+          fontSize: AFP_FONT_SIZE.muscleDropdown,
+          fontWeight: AFP_FONT_WEIGHT.muscleDropdown,
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
@@ -5468,7 +5748,8 @@ function MuscleStrengthSelect({
                 maxWidth: 430,
                 "& .MuiMenuItem-root": {
                   whiteSpace: "normal",
-                  fontSize: "0.78rem",
+                  fontSize: AFP_FONT_SIZE.muscleDropdownOption,
+                  fontWeight: AFP_FONT_WEIGHT.muscleDropdownOption,
                   lineHeight: 1.4,
                   py: 1,
                 },
@@ -5772,7 +6053,8 @@ function ReflexSelect(props: ReflexSelectProps) {
           height: 25,
           borderRadius: "7px",
           backgroundColor: "#ffffff",
-          fontSize: "0.72rem",
+          fontSize: AFP_FONT_SIZE.reflexDropdown,
+          fontWeight: AFP_FONT_WEIGHT.reflexDropdown,
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
@@ -5808,7 +6090,8 @@ function ReflexSelect(props: ReflexSelectProps) {
 
                 "& .MuiMenuItem-root": {
                   whiteSpace: "normal",
-                  fontSize: "0.78rem",
+                  fontSize: AFP_FONT_SIZE.reflexDropdownOption,
+                  fontWeight: AFP_FONT_WEIGHT.reflexDropdownOption,
                   lineHeight: 1.4,
                 },
               },
@@ -5831,7 +6114,7 @@ function ReflexSelect(props: ReflexSelectProps) {
           sx={{
             m: 0,
             mt: 0.5,
-            fontSize: "0.65rem",
+            fontSize: AFP_FONT_SIZE.reflexDropdownValidation,
             lineHeight: 1.3,
             whiteSpace: "nowrap",
           }}
@@ -5884,7 +6167,7 @@ function CheckboxField({
         alignItems: "center",
         "& .MuiFormControlLabel-label": {
           color: "#334155",
-          fontSize: "0.75rem",
+          fontSize: AFP_FONT_SIZE.checkboxLabel,
           lineHeight: 1.3,
         },
       }}
@@ -5986,7 +6269,12 @@ function DateField({
         slotProps={{
           formHelperText: {
             role: "alert",
-            sx: { ml: 0, mt: 0.5, fontSize: "0.75rem", lineHeight: 1.5 },
+            sx: {
+              ml: 0,
+              mt: 0.5,
+              fontSize: AFP_FONT_SIZE.dateHelperText,
+              lineHeight: 1.5,
+            },
           },
           htmlInput: {
             maxLength: 10,
@@ -6038,7 +6326,8 @@ function DateField({
           },
           "& input": {
             py: "8px",
-            fontSize: "0.78rem",
+            fontSize: AFP_FONT_SIZE.dateInput,
+            fontWeight: AFP_FONT_WEIGHT.dateInput,
           },
           "& input::placeholder": {
             color: "#94a3b8",
@@ -6074,7 +6363,10 @@ function FieldError({ message }: FieldErrorProps) {
   }
 
   return (
-    <p role="alert" className="mt-1 text-xs leading-4 text-red-600">
+    <p
+      role="alert"
+      className="mt-1 text-(length:--afp-font-size-inline-field-error) leading-4 text-red-600"
+    >
       {message}
     </p>
   );
@@ -6146,7 +6438,8 @@ function NumberField({
 
           "& input": {
             py: "8px",
-            fontSize: "0.8rem",
+            fontSize: AFP_FONT_SIZE.numberInput,
+            fontWeight: AFP_FONT_WEIGHT.numberInput,
           },
         }}
       />
@@ -6211,7 +6504,8 @@ function SelectField({
           minHeight: 38,
           borderRadius: "8px",
           backgroundColor: "#ffffff",
-          fontSize: "0.78rem",
+          fontSize: AFP_FONT_SIZE.standardDropdown,
+          fontWeight: AFP_FONT_WEIGHT.standardDropdown,
 
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#b9c8d8",
@@ -6244,7 +6538,8 @@ function SelectField({
             key={option.value}
             value={option.value}
             sx={{
-              fontSize: "0.82rem",
+              fontSize: AFP_FONT_SIZE.standardDropdownOption,
+              fontWeight: AFP_FONT_WEIGHT.standardDropdownOption,
             }}
           >
             {option.label}
@@ -6486,7 +6781,7 @@ function ValidatedField({
             ml: 0,
             mt: -0.5,
             mb: 1.5,
-            fontSize: "0.75rem",
+            fontSize: AFP_FONT_SIZE.validatedFieldError,
             lineHeight: 1.5,
             whiteSpace: "nowrap",
           }}
@@ -6552,8 +6847,8 @@ function YesNoField({
             py: 0.5,
             color: "#64748b",
             backgroundColor: "#ffffff",
-            fontSize: "0.75rem",
-            fontWeight: 500,
+            fontSize: AFP_FONT_SIZE.yesNoButton,
+            fontWeight: AFP_FONT_WEIGHT.yesNoButton,
             lineHeight: 1,
             textTransform: "none",
             transition:
@@ -6565,7 +6860,7 @@ function YesNoField({
               color: "#0756c9",
               borderColor: "#216fed !important",
               backgroundColor: "#eef5ff",
-              fontWeight: 600,
+              fontWeight: AFP_FONT_WEIGHT.yesNoButtonSelected,
             },
             "&.Mui-selected:hover": {
               backgroundColor: "#eef5ff",
@@ -6655,8 +6950,8 @@ function YesNoPendingField({
             },
             color: "#64748b",
             backgroundColor: "#ffffff",
-            fontSize: "0.72rem",
-            fontWeight: 500,
+            fontSize: AFP_FONT_SIZE.yesNoPendingButton,
+            fontWeight: AFP_FONT_WEIGHT.yesNoPendingButton,
             lineHeight: 1,
             textTransform: "none",
             whiteSpace: "nowrap",
@@ -6669,7 +6964,7 @@ function YesNoPendingField({
               color: "#0756c9",
               borderColor: "#216fed !important",
               backgroundColor: "#dceaff",
-              fontWeight: 600,
+              fontWeight: AFP_FONT_WEIGHT.yesNoPendingButtonSelected,
             },
 
             "&.Mui-selected:hover": {
@@ -6750,8 +7045,8 @@ function YesNoUnknownField({
             py: 0.5,
             color: "#64748b",
             backgroundColor: "#ffffff",
-            fontSize: "0.72rem",
-            fontWeight: 500,
+            fontSize: AFP_FONT_SIZE.yesNoUnknownButton,
+            fontWeight: AFP_FONT_WEIGHT.yesNoUnknownButton,
             lineHeight: 1,
             textTransform: "none",
             whiteSpace: "nowrap",
@@ -6766,7 +7061,7 @@ function YesNoUnknownField({
               color: "#0756c9",
               borderColor: "#216fed !important",
               backgroundColor: "#eef5ff",
-              fontWeight: 600,
+              fontWeight: AFP_FONT_WEIGHT.yesNoUnknownButtonSelected,
             },
 
             "&.Mui-selected:hover": {
