@@ -1472,12 +1472,12 @@ export function validatePreviousHealthcareContacts(
     );
   }
 
-  requireAFPField(
-    errors,
-    "previousHealthcareContacts.additionalComments",
-    history.additionalComments,
-    "Additional comments",
-  );
+  // requireAFPField(
+  //   errors,
+  //   "previousHealthcareContacts.additionalComments",
+  //   history.additionalComments,
+  //   "Additional comments",
+  // );
 
   // The dropdown is disabled if no options are configured.
   if (suspectedDiagnosisOptions.length > 0) {
@@ -2598,7 +2598,8 @@ function ClinicalInformationSection() {
             htmlFor="afp-screening-diagnosis"
             className="mb-2 block text-[13px] font-medium text-[#8a5a13]"
           >
-            Specify the diagnosis, if known:
+            Bases on your answer the case is not affected with AFP. Specify the
+            diagnosis, if known:
           </label>
 
           <TextField
@@ -3253,8 +3254,8 @@ function ContactBlock({
           <ValidatedField
             fieldId={dateId}
             error={dateError}
-            showMessage={false}
-            className="min-w-0 [&_.MuiFormHelperText-root]:whitespace-nowrap"
+            // showMessage={false}
+            className={`min-w-0 ${errorSpacing}`}
           >
             <FieldLabel fieldId={dateId} className={contactLabelClass}>
               3. Dates case visited
@@ -6320,7 +6321,7 @@ const AFP_REQUIRED_ALWAYS = new Set<string>([
   "signsSymptoms.childAtHealthFacility",
   "signsSymptoms.siteOfParalysis",
   "previousHealthcareContacts.firstContactCategory",
-  "previousHealthcareContacts.additionalComments",
+  // "previousHealthcareContacts.additionalComments",
   "additionalInformation.searchForAdditionalCases",
   "additionalInformation.outbreakResponseImmunizationDone",
 ]);
