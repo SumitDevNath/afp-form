@@ -98,3 +98,68 @@ to the repository or written to development logs.
 
 Protected investigation endpoints must not be enabled
 without approved authorization controls.
+
+The project now includes:
+
+- SQLAlchemy asynchronous engine.
+- Psycopg 3 PostgreSQL driver.
+- Request-scoped asynchronous sessions.
+- Explicit rollback and session cleanup.
+- Environment-based database configuration.
+- Alembic asynchronous migration environment.
+- Local PostgreSQL connectivity verification.
+
+### Configure PostgreSQL
+
+Create a local PostgreSQL development database, for example:
+
+    afp_dev
+
+Copy .env.example to .env:
+
+    cp .env.example .env
+
+Edit .env and supply the actual PostgreSQL connection settings.
+
+Never commit .env or database credentials.
+
+### Verify Connectivity
+
+From the backend directory with the virtual environment active:
+
+    python -m scripts.check_database
+
+This executes a read-only asynchronous PostgreSQL query.
+
+### Alembic
+
+Verify migration configuration:
+
+    python -m alembic current
+    python -m alembic heads
+
+No AFP migrations or application tables are created in Phase 2.
+
+All AFP schema creation will use reviewed Alembic revisions beginning in Phase 3.
+
+### Application
+
+Start the API:
+
+    python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+Health endpoint:
+
+    GET http://127.0.0.1:8000/health
+
+The health endpoint reports application liveness only.
+
+### Database Session Policy
+
+- Use one AsyncSession per request or task.
+- Never share a session across concurrent operations.
+- Do not perform blocking database operations in async routes.
+- Let service-layer operations explicitly manage commits.
+- Roll back failed or unfinished transactions.
+- Dispose of database engines during shutdown.
+- Keep database logic outside HTTP route handlers.
