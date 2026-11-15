@@ -22,3 +22,31 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# AFP backend local artifacts
+
+# Python virtual environment
+backend/.venv/
+
+# Python bytecode and caches
+backend/**/__pycache__/
+backend/**/*.py[cod]
+
+# Testing, coverage and tooling
+backend/**/.pytest_cache/
+backend/**/.mypy_cache/
+backend/**/.ruff_cache/
+backend/.coverage
+backend/htmlcov/
+
+# Local environment configuration and secrets
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Local database exports and sensitive data
+backend/**/*.dump
+backend/**/*.backup
+backend/**/*.sql.gz
+backend/local-data/
