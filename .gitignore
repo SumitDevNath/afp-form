@@ -50,3 +50,20 @@ backend/**/*.dump
 backend/**/*.backup
 backend/**/*.sql.gz
 backend/local-data/
+
+# AFP backend local artifacts
+afp-backend/.venv/
+afp-backend/.env
+afp-backend/.env.*
+!afp-backend/.env.example
+afp-backend/**/__pycache__/
+afp-backend/**/*.py[cod]
+afp-backend/**/.pytest_cache/
+afp-backend/**/.mypy_cache/
+afp-backend/**/.ruff_cache/
+afp-backend/.coverage
+afp-backend/htmlcov/
+afp-backend/**/*.dump
+afp-backend/**/*.backup
+afp-backend/**/*.sql.gz
+afp-backend/local-data/
