@@ -1,13 +1,13 @@
 """FastAPI application entry point for AFP investigations."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.db.session import engine
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Release database connection resources on shutdown."""
 
     try:
