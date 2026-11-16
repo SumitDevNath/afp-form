@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     afp_db_name: str = Field(min_length=1)
     afp_db_user: str = Field(min_length=1)
     afp_db_password: SecretStr = Field(min_length=1)
+    afp_local_api_enabled: bool = False
 
     @property
     def database_url(self) -> URL:

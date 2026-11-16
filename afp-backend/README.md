@@ -204,3 +204,50 @@ Run all tests:
     AFP_DB_NAME=afp_test python -m pytest -v tests/
 
 Never run state-changing tests against the development or production database.
+
+## Development HTTP API
+
+Three local-development investigation routes are available:
+
+- POST /api/v1/afp/investigations
+- GET /api/v1/afp/investigations/{id}
+- PUT /api/v1/afp/investigations/{id}
+
+The original GET /health endpoint remains available.
+
+### Restrictions
+
+These are not approved production NDSS endpoints.
+
+- The local API is disabled by default.
+- Local access requires AFP_LOCAL_API_ENABLED=true.
+- Only local development/test database names and loopback hosts are accepted.
+- Requests require the X-AFP-Local-Dev: true header.
+- No DGHS/NDSS user authentication has been implemented.
+- No real patient data may be used.
+- Shared vaccination/travel data is not persisted.
+- Screened-out and draft persistence is not approved.
+- POST idempotency is not implemented; do not automatically retry submissions.
+- Deployment, CORS, access policies, and request-size controls require further security review.
+
+### Run HTTP Tests
+
+Use the dedicated afp_test database with revision 0001_afp_owned:
+
+    AFP_LOCAL_API_ENABLED=true AFP_DB_NAME=afp_test python -m pytest -v tests/test_afp_api.py
+
+### Run All Tests
+
+    AFP_LOCAL_API_ENABLED=true AFP_DB_NAME=afp_test python -m pytest -v tests/
+
+### Local Development Server
+
+    AFP_LOCAL_API_ENABLED=true python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --no-access-log
+
+### API Response Scope
+
+Responses contain AFP-owned data only.
+
+The response explicitly identifies vaccinationHistory and travelHistory as not persisted.
+
+Authentication, authorization, reference integration, submission orchestration, and durable idempotency remain unresolved.
