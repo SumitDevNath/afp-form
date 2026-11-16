@@ -6,6 +6,8 @@ from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
+import asyncio
+import sys
 
 
 def _display(day: date) -> str:
@@ -117,3 +119,12 @@ def today() -> date:
 @pytest.fixture
 def payload(today: date) -> dict:
     return make_payload(today)
+
+
+
+def pytest_asyncio_loop_factories(config, item):
+    """Use a Windows-compatible event loop for Psycopg 3 async tests."""
+    return {
+        "selector": asyncio.SelectorEventLoop,
+    }
+

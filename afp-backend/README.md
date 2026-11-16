@@ -163,3 +163,44 @@ The health endpoint reports application liveness only.
 - Roll back failed or unfinished transactions.
 - Dispose of database engines during shutdown.
 - Keep database logic outside HTTP route handlers.
+
+## Async Service Layer
+
+### Capabilities
+
+- Atomic investigation creation and updates
+- Explicit PostgreSQL transaction boundaries
+- Eager relationship loading
+- Stable healthcare contact identity and ordering
+- Complete frontend validation before persistence
+- Transaction rollback on failure
+
+### Restrictions
+
+These services are for isolated local development and testing only.
+
+They are not production NDSS submission endpoints.
+
+- Authentication and authorization are not implemented.
+- Patient/case linkage has not been confirmed.
+- Shared vaccination and travel service integration is pending.
+- Screened-out and draft persistence are not approved.
+- No public CRUD endpoints exist.
+
+### PostgreSQL Tests
+
+Use a separate database named afp_test.
+
+Apply the existing Phase 3 migration:
+
+    AFP_DB_NAME=afp_test python -m alembic upgrade head
+
+Run service tests:
+
+    AFP_DB_NAME=afp_test python -m pytest -v tests/test_afp_services.py
+
+Run all tests:
+
+    AFP_DB_NAME=afp_test python -m pytest -v tests/
+
+Never run state-changing tests against the development or production database.

@@ -6,3 +6,4 @@ sqlalchemy[asyncio]
 psycopg[binary]
 alembic
 pytest
+pytest-asyncio
