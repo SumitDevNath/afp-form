@@ -138,9 +138,9 @@ Verify migration configuration:
     python -m alembic current
     python -m alembic heads
 
-No AFP migrations or application tables are created in Phase 2.
+No AFP migrations or application tables are created.
 
-All AFP schema creation will use reviewed Alembic revisions beginning in Phase 3.
+All AFP schema creation will use reviewed Alembic revisions beginning.
 
 ### Application
 
@@ -191,7 +191,7 @@ They are not production NDSS submission endpoints.
 
 Use a separate database named afp_test.
 
-Apply the existing Phase 3 migration:
+Apply the existing migration:
 
     AFP_DB_NAME=afp_test python -m alembic upgrade head
 
@@ -251,3 +251,54 @@ Responses contain AFP-owned data only.
 The response explicitly identifies vaccinationHistory and travelHistory as not persisted.
 
 Authentication, authorization, reference integration, submission orchestration, and durable idempotency remain unresolved.
+
+## NDSS Security Integration Preparation
+
+currently contains provisional authorization scaffolding.
+
+### Implemented
+
+- Normalized NDSS principal representation.
+- Fail-closed Bearer credential dependency.
+- Provisional facility-role permission checks.
+- Explicit denial of DELETE operations.
+- Default denial of unconfirmed case/resource access.
+- Isolated authentication and authorization tests.
+- Documented outstanding production integration contracts.
+
+### Not Yet Implemented
+
+- Approved DGHS/NDSS identity validation.
+- Production token verification.
+- Confirmed production role matrix.
+- Patient/case ownership checks.
+- Facility-specific record access.
+- Authorized production AFP routes.
+
+### Security Status
+
+BLOCKED — NOT PRODUCTION READY.
+
+The existing local development API remains unchanged
+and must remain disabled in deployment.
+
+The new security modules are not wired into the existing API routes.
+No production authorization claims are made.
+
+See docs/ndss-auth-contract.md for decisions requiring NDSS approval.
+
+### Run Security Tests
+
+    python -m pytest -v tests/test_ndss_security_contract.py
+
+### Full Regression Suite
+
+Run only against the dedicated PostgreSQL test database:
+
+    AFP_DB_NAME=afp_test AFP_LOCAL_API_ENABLED=true python -m pytest -q tests/
+
+### Next Required Action
+
+Obtain the approved NDSS authentication, case-linkage, and facility
+ownership contracts before implementing production identity validation
+or protected investigation endpoints.
