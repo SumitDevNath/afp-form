@@ -17,6 +17,7 @@ from app.schemas.afp import (
     FrontendModel,
     PreviousHealthcareContacts,
     SignsSymptoms,
+    AFPFormData
 )
 
 
@@ -50,3 +51,18 @@ class AFPInvestigationRead(FrontendModel):
     )
 
     data: AFPOwnedData
+
+class AFPInvestigationRead(FrontendModel):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    persistence_scope: Literal["local_full_form"] = (
+        "local_full_form"
+    )
+
+    not_persisted_sections: list[str] = Field(
+        default_factory=list,
+    )
+
+    data: AFPFormData

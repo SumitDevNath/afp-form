@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from uuid import UUID, uuid4
+from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -19,7 +20,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -130,12 +131,22 @@ class AFPInvestigation(Base):
             "number_of_children_vaccinated >= 0",
             name="ck_afp_inv_vaccinated_count",
         ),
+        CheckConstraint(
+            "frontend_payload IS NULL OR "
+            "jsonb_typeof(frontend_payload) = 'object'",
+            name="ck_afp_inv_frontend_payload_object",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
+    )
+
+    frontend_payload: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

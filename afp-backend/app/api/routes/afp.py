@@ -1,5 +1,8 @@
+"""Local AFP investigation API.
 
-"""Local-development AFP investigation HTTP routes."""
+Full frontend payload persistence is local-development-only.
+Authentication and NDSS ownership integration remain pending.
+"""
 
 from uuid import UUID
 
@@ -10,11 +13,11 @@ from app.api.dependencies import require_local_afp_api
 from app.db.session import get_db_session
 from app.schemas.afp import AFPFormData
 from app.schemas.api import AFPInvestigationRead
-from app.services.afp import (
-    AFPInvestigationNotFound,
-    create_local_afp_investigation,
-    get_local_afp_investigation,
-    update_local_afp_investigation,
+from app.services.afp import AFPInvestigationNotFound
+from app.services.local_complete import (
+    create_local_full_afp,
+    get_local_full_afp,
+    update_local_full_afp,
 )
 from app.utils.owned_response import to_owned_read
 
@@ -35,9 +38,9 @@ async def create_afp(
     payload: AFPFormData,
     session: AsyncSession = Depends(get_db_session),
 ) -> AFPInvestigationRead:
-    """Create an AFP-owned local investigation."""
+    """Create and validate a complete local AFP record."""
 
-    record = await create_local_afp_investigation(
+    record = await create_local_full_afp(
         session,
         payload.model_dump(
             mode="json",
@@ -57,9 +60,9 @@ async def read_afp(
     investigation_id: UUID,
     session: AsyncSession = Depends(get_db_session),
 ) -> AFPInvestigationRead:
-    """Retrieve an AFP-owned local investigation."""
+    """Retrieve the complete locally stored form."""
 
-    record = await get_local_afp_investigation(
+    record = await get_local_full_afp(
         session,
         investigation_id,
         local_dev_mode=True,
@@ -82,9 +85,9 @@ async def replace_afp(
     payload: AFPFormData,
     session: AsyncSession = Depends(get_db_session),
 ) -> AFPInvestigationRead:
-    """Atomically replace AFP-owned investigation fields."""
+    """Atomically update the complete locally stored form."""
 
-    record = await update_local_afp_investigation(
+    record = await update_local_full_afp(
         session,
         investigation_id,
         payload.model_dump(

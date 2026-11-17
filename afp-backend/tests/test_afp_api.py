@@ -97,20 +97,23 @@ async def test_post_get_and_db_persistence(client, saved_ids):
     uid = UUID(body["id"])
     saved_ids.append(uid)
 
-    assert body["persistenceScope"] == "afp_owned_only"
-    assert body["notPersistedSections"] == [
-        "vaccinationHistory",
-        "travelHistory",
-    ]
+    # assert body["persistenceScope"] == "afp_owned_only"
+    # assert body["notPersistedSections"] == [
+    #     "vaccinationHistory",
+    #     "travelHistory",
+    # ]
 
-    assert set(body["data"]) == {
-        "clinicalInformation",
-        "screeningDiagnosis",
-        "signsSymptoms",
-        "clinicalExamination",
-        "previousHealthcareContacts",
-        "additionalInformation",
-    }
+    # assert set(body["data"]) == {
+    #     "clinicalInformation",
+    #     "screeningDiagnosis",
+    #     "signsSymptoms",
+    #     "clinicalExamination",
+    #     "previousHealthcareContacts",
+    #     "additionalInformation",
+    # }
+    assert body["persistenceScope"] == "local_full_form"
+    assert body["notPersistedSections"] == []
+    assert body["data"] == payload
 
     assert (
         body["data"]["clinicalExamination"]
@@ -253,9 +256,15 @@ async def test_unknown_field_does_not_echo_sensitive_value(
     assert "VERY_PRIVATE_TEST_VALUE" not in response.text
 
 
-async def test_shared_data_cannot_be_silently_ignored(client):
+async def test_shared_data_saved_in_local_snapshot(
+    client,
+    saved_ids,
+):
     payload = example()
-    payload["travelHistory"]["travelOutsideAreaLast30Days"] = True
+
+    payload["travelHistory"][
+        "travelOutsideAreaLast30Days"
+    ] = True
 
     response = await client.post(
         BASE,
@@ -263,13 +272,24 @@ async def test_shared_data_cannot_be_silently_ignored(client):
         headers=HEADERS,
     )
 
-    assert response.status_code == 503
-    assert "data" not in response.json()
+    assert response.status_code == 201, response.text
+
+    saved_ids.append(UUID(response.json()["id"]))
+
+    assert response.json()["data"][
+        "travelHistory"
+    ] == payload["travelHistory"]
 
 
-async def test_ineligible_lifecycle_not_approved(client):
+async def test_screened_out_record_saved_locally(
+    client,
+    saved_ids,
+):
     payload = example()
-    payload["clinicalInformation"]["paralysisPresent"] = "no"
+
+    payload["clinicalInformation"][
+        "paralysisPresent"
+    ] = "no"
 
     response = await client.post(
         BASE,
@@ -277,7 +297,11 @@ async def test_ineligible_lifecycle_not_approved(client):
         headers=HEADERS,
     )
 
-    assert response.status_code == 503
+    assert response.status_code == 201, response.text
+
+    saved_ids.append(UUID(response.json()["id"]))
+
+    assert response.json()["data"] == payload
 
 
 async def test_not_found(client):
@@ -363,7 +387,7 @@ async def test_integrity_error_response_redacted(
 
     monkeypatch.setattr(
         afp_routes,
-        "create_local_afp_investigation",
+        "create_local_full_afp",
         failing_create,
     )
 
@@ -386,7 +410,7 @@ async def test_unexpected_error_response_redacted(
 
     monkeypatch.setattr(
         afp_routes,
-        "create_local_afp_investigation",
+        "create_local_full_afp",
         failing_create,
     )
 
