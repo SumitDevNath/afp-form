@@ -4060,67 +4060,99 @@ function PreviousHealthcareContactsSection({
         </div>
 
         {/* ===================================================
-            BOTTOM FIELDS
-           =================================================== */}
+    BOTTOM FIELDS
+   =================================================== */}
 
         <div className="m-5 grid gap-5 lg:grid-cols-[minmax(220px,0.75fr)_minmax(320px,1.5fr)]">
-          {/* FIRST CONTACT CATEGORY */}
+          {/* LEFT COLUMN: FIRST CONTACT CATEGORY & SUSPECTED DIAGNOSIS */}
+          <div className="space-y-5">
+            {/* FIRST CONTACT CATEGORY */}
+            <div>
+              <ValidatedField
+                fieldId={categoryId}
+                error={errors[categoryId]}
+                className={errorSpacing}
+              >
+                <FieldLabel
+                  fieldId={categoryId}
+                  className="mb-1.5 block text-(length:--afp-font-size-contact-category-label) font-(--afp-font-weight-contact-category-label) text-[#355b88]"
+                >
+                  Category of the first contact:
+                </FieldLabel>
 
-          <div>
+                <OptionsSelect
+                  value={history.firstContactCategory ?? ""}
+                  options={FIRST_CONTACT_CATEGORY_OPTIONS}
+                  onChange={handleCategoryChange}
+                  placeholder="List of the Contacts"
+                  placeholderClassName="text-[#64748b]"
+                  ariaLabel="Category of the first contact"
+                  disabled={readOnly}
+                  error={Boolean(errors[categoryId])}
+                  errorId={`${categoryId}-error`}
+                />
+              </ValidatedField>
+
+              {/* OTHER CATEGORY */}
+              {history.firstContactCategory === "Other" && (
+                <ValidatedField
+                  fieldId={categoryOtherId}
+                  error={errors[categoryOtherId]}
+                  className={`mt-3 ${errorSpacing}`}
+                >
+                  <CompactTextField
+                    value={history.firstContactCategoryOther}
+                    onChange={(value) =>
+                      updateHistory((previous) => ({
+                        ...previous,
+                        firstContactCategoryOther: value,
+                      }))
+                    }
+                    placeholder="Specify other"
+                    ariaLabel="Specify other first contact category"
+                    maxLength={150}
+                    disabled={readOnly}
+                    error={Boolean(errors[categoryOtherId])}
+                    errorId={`${categoryOtherId}-error`}
+                  />
+                </ValidatedField>
+              )}
+            </div>
+
+            {/* SUSPECTED DIAGNOSIS */}
             <ValidatedField
-              fieldId={categoryId}
-              error={errors[categoryId]}
+              fieldId={diagnosisId}
+              error={errors[diagnosisId]}
               className={errorSpacing}
             >
               <FieldLabel
-                fieldId={categoryId}
-                className="mb-1.5 block text-(length:--afp-font-size-contact-category-label) font-(--afp-font-weight-contact-category-label) text-[#355b88]"
+                fieldId={diagnosisId}
+                className={sideLabelClass}
+                required={suspectedDiagnosisOptions.length > 0}
               >
-                Category of the first contact:
+                Suspected diagnosis
               </FieldLabel>
 
               <OptionsSelect
-                value={history.firstContactCategory ?? ""}
-                options={FIRST_CONTACT_CATEGORY_OPTIONS}
-                onChange={handleCategoryChange}
-                placeholder="List of the Contacts"
-                placeholderClassName="text-[#64748b]"
-                ariaLabel="Category of the first contact"
-                disabled={readOnly}
-                error={Boolean(errors[categoryId])}
-                errorId={`${categoryId}-error`}
+                value={history.suspectedDiagnosis}
+                options={suspectedDiagnosisOptions}
+                onChange={handleDiagnosisChange}
+                placeholder={
+                  suspectedDiagnosisOptions.length > 0
+                    ? "Select from the list of Disease"
+                    : "No diagnosis options configured"
+                }
+                placeholderClassName="text-[#475569]"
+                ariaLabel="Suspected diagnosis"
+                disabled={readOnly || suspectedDiagnosisOptions.length === 0}
+                wrapMenuItems
+                error={Boolean(errors[diagnosisId])}
+                errorId={`${diagnosisId}-error`}
               />
             </ValidatedField>
-
-            {/* OTHER CATEGORY */}
-
-            {history.firstContactCategory === "Other" && (
-              <ValidatedField
-                fieldId={categoryOtherId}
-                error={errors[categoryOtherId]}
-                className={`mt-3 ${errorSpacing}`}
-              >
-                <CompactTextField
-                  value={history.firstContactCategoryOther}
-                  onChange={(value) =>
-                    updateHistory((previous) => ({
-                      ...previous,
-                      firstContactCategoryOther: value,
-                    }))
-                  }
-                  placeholder="Specify other"
-                  ariaLabel="Specify other first contact category"
-                  maxLength={150}
-                  disabled={readOnly}
-                  error={Boolean(errors[categoryOtherId])}
-                  errorId={`${categoryOtherId}-error`}
-                />
-              </ValidatedField>
-            )}
           </div>
 
-          {/* ADDITIONAL COMMENTS */}
-
+          {/* RIGHT COLUMN: ADDITIONAL COMMENTS */}
           <ValidatedField
             fieldId={commentsId}
             error={errors[commentsId]}
@@ -4148,39 +4180,6 @@ function PreviousHealthcareContactsSection({
               errorId={`${commentsId}-error`}
             />
           </ValidatedField>
-
-          {/* SUSPECTED DIAGNOSIS */}
-
-          <ValidatedField
-            fieldId={diagnosisId}
-            error={errors[diagnosisId]}
-            className={`max-w-[320px] ${errorSpacing}`}
-          >
-            <FieldLabel
-              fieldId={diagnosisId}
-              className={sideLabelClass}
-              required={suspectedDiagnosisOptions.length > 0}
-            >
-              Suspected diagnosis
-            </FieldLabel>
-
-            <OptionsSelect
-              value={history.suspectedDiagnosis}
-              options={suspectedDiagnosisOptions}
-              onChange={handleDiagnosisChange}
-              placeholder={
-                suspectedDiagnosisOptions.length > 0
-                  ? "Select from the list of Disease"
-                  : "No diagnosis options configured"
-              }
-              placeholderClassName="text-[#475569]"
-              ariaLabel="Suspected diagnosis"
-              disabled={readOnly || suspectedDiagnosisOptions.length === 0}
-              wrapMenuItems
-              error={Boolean(errors[diagnosisId])}
-              errorId={`${diagnosisId}-error`}
-            />
-          </ValidatedField>
         </div>
       </div>
     </section>
@@ -4200,6 +4199,7 @@ type ReflexFieldProps = {
   label: string;
   ariaLabel?: string;
   disabled?: boolean;
+  connectedMobile?: boolean;
 
   placement?: {
     side: "left" | "right";
@@ -4316,17 +4316,22 @@ function ReflexField(props: ReflexFieldProps) {
     placement,
     fieldId,
     errorMessage = "",
+    connectedMobile = false,
   } = props;
 
   const wrapperClass = placement
     ? "absolute z-10"
-    : "grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-center";
+    : connectedMobile
+      ? "min-w-0"
+      : "grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-center";
 
   // Keep labels above the controls, outside their measured height.
   // This makes each compact select center exactly on its SVG connector.
   const labelClass = placement
     ? `${attachedLabelClass} absolute bottom-full left-0 right-0`
-    : mobileLabelClass;
+    : connectedMobile
+      ? `${mobileLabelClass} mb-1 block text-center leading-4 [overflow-wrap:anywhere]`
+      : mobileLabelClass;
 
   // Desktop and mobile instances share the validation field ID,
   // but have distinct helper-text IDs for accessibility.
@@ -4358,7 +4363,12 @@ function ReflexField(props: ReflexFieldProps) {
           : undefined
       }
     >
+      {/* Reflex Muscle label showing */}
       <FieldLabel fieldId={fieldId} className={`${labelClass} hidden`}>
+        {/* <FieldLabel
+        fieldId={fieldId}
+        className={connectedMobile ? labelClass : `${labelClass} hidden`}
+      > */}
         {label}
       </FieldLabel>
 
@@ -4371,6 +4381,7 @@ function ReflexField(props: ReflexFieldProps) {
           ariaLabel={ariaLabel}
           errorMessage={errorMessage}
           errorId={errorId}
+          connectedMobile={connectedMobile}
         />
       ) : (
         <ReflexSelect
@@ -4381,6 +4392,7 @@ function ReflexField(props: ReflexFieldProps) {
           ariaLabel={ariaLabel}
           errorMessage={errorMessage}
           errorId={errorId}
+          connectedMobile={connectedMobile}
         />
       )}
     </div>
@@ -4538,82 +4550,314 @@ function ReflexesSection() {
         })}
       </div>
 
-      {/* MOBILE: RESPONSIVE INFANT DIAGRAM + SCORE LIST */}
+      {/* MOBILE: CONNECTED ANATOMICAL LAYOUT */}
       <div className="md:hidden">
-        <div className="mx-auto mb-6 w-full max-w-66">
-          <div className="mb-2 flex justify-between">
-            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]">
-              RT
-            </span>
+        <MobileReflexLayout
+          reflexes={reflexes}
+          errors={errors}
+          readOnly={readOnly}
+          updateScore={updateScore}
+          updatePlantarReflex={updatePlantarReflex}
+        />
+      </div>
+    </div>
+  );
+}
 
-            <span className="rounded-md bg-[#eaf3ff] px-2 py-1 text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]">
-              LT
-            </span>
-          </div>
+// Mobile-only layout. Actual control positions are measured so connectors
+// remain attached when labels wrap, validation errors appear, or width changes.
+type MobileReflexAnchor = keyof typeof REFLEX_ANCHORS;
+type MobileReflexSide = "left" | "right";
+type MobileReflexControl = { x: number; y: number; top: number; width: number };
+type MobileReflexMeasurement = {
+  width: number;
+  height: number;
+  controls: Record<
+    MobileReflexAnchor,
+    Record<MobileReflexSide, MobileReflexControl>
+  >;
+};
 
-          <ReflexBodyDiagram
-            className="h-auto w-full"
-            renderer={DIAGRAM_RENDERER}
-          />
-        </div>
+interface MobileReflexLayoutProps {
+  reflexes: AFPReflexExamination;
+  errors: AFPValidationErrors;
+  readOnly: boolean;
+  updateScore: (field: ReflexScoreField, value: ReflexScoreCode) => void;
+  updatePlantarReflex: (field: PlantarField, value: PlantarReflexValue) => void;
+}
 
-        <div className="space-y-6">
-          {sides_Reflexes.map((side, index) => (
-            <div
+function MobileReflexLayout({
+  reflexes,
+  errors,
+  readOnly,
+  updateScore,
+  updatePlantarReflex,
+}: MobileReflexLayoutProps) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [measurement, setMeasurement] =
+    useState<MobileReflexMeasurement | null>(null);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const measure = () => {
+      const bounds = stage.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) return; // Hidden at md and above.
+
+      const controls = {} as MobileReflexMeasurement["controls"];
+      for (const anchor of Object.keys(
+        REFLEX_ANCHORS,
+      ) as MobileReflexAnchor[]) {
+        controls[anchor] = {} as Record<MobileReflexSide, MobileReflexControl>;
+        for (const side of ["left", "right"] as const) {
+          const wrapper = stage.querySelector<HTMLElement>(
+            `[data-mobile-reflex-anchor="${anchor}"][data-mobile-reflex-side="${side}"]`,
+          );
+          const control =
+            wrapper?.querySelector<HTMLElement>('[role="combobox"]');
+          if (!wrapper || !control) return;
+          const box = wrapper.getBoundingClientRect();
+          const input = control.getBoundingClientRect();
+          controls[anchor][side] = {
+            x: (side === "left" ? box.right : box.left) - bounds.left,
+            y: (input.top + input.bottom) / 2 - bounds.top,
+            top: box.top - bounds.top,
+            width: box.width,
+          };
+        }
+      }
+      setMeasurement({ width: bounds.width, height: bounds.height, controls });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    stage
+      .querySelectorAll<HTMLElement>(
+        "[data-mobile-reflex-anchor], [role=combobox]",
+      )
+      .forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <div
+        ref={stageRef}
+        className="relative mx-auto w-full"
+        style={{ minWidth: 232, maxWidth: REFLEX_DIAGRAM_LAYOUT.maxStageWidth }}
+      >
+        {measurement && <MobileReflexBodyDiagram measurement={measurement} />}
+        <div
+          className="relative grid"
+          style={{
+            gridTemplateColumns:
+              "clamp(76px, 32%, 112px) minmax(0, 1fr) clamp(76px, 32%, 112px)",
+            alignItems: "start",
+          }}
+        >
+          {sides_Reflexes.map((side) => (
+            <span
               key={side.heading}
-              className={
-                index === 1 ? "border-t border-[#dbe6f1] pt-5" : undefined
-              }
+              className="relative z-10 mb-3 rounded-md bg-[#eaf3ff] px-2 py-1 text-center text-(length:--afp-font-size-reflex-panel-side-badge) font-(--afp-font-weight-reflex-panel-side-badge) text-[#1752a0]"
+              style={{
+                gridColumn: side.position === "left" ? 1 : 3,
+                gridRow: 1,
+              }}
             >
-              <h4 className="mb-3 text-(length:--afp-font-size-reflex-mobile-side-heading) leading-5 font-(--afp-font-weight-reflex-mobile-side-heading) text-[#173b69]">
-                {side.heading}
-              </h4>
-
-              <div className="space-y-4">
-                {/* REFLEX SCORES */}
-                {reflexQuestions.map((question) => {
-                  const field = question[side.scoreKey];
-
-                  const fieldId = `clinicalExamination.reflexes.scores.${field}`;
-
-                  return (
+              {side.heading}
+            </span>
+          ))}
+          {reflexQuestions.map((question, index) => (
+            <Fragment key={question.anchor}>
+              {sides_Reflexes.map((side) => {
+                const field = question[side.scoreKey];
+                const fieldId = `clinicalExamination.reflexes.scores.${field}`;
+                return (
+                  <div
+                    key={side.heading}
+                    data-mobile-reflex-anchor={question.anchor}
+                    data-mobile-reflex-side={side.position}
+                    className="relative z-10 min-w-0"
+                    style={{
+                      gridColumn: side.position === "left" ? 1 : 3,
+                      gridRow: index + 2,
+                      minHeight: 78,
+                      paddingBottom: 12,
+                    }}
+                  >
                     <ReflexField
-                      key={field}
                       type="score"
                       label={question.label}
                       value={reflexes.scores[field]}
                       onChange={(value) => updateScore(field, value)}
                       disabled={readOnly}
+                      ariaLabel={`${side.heading} ${question.label} reflex score`}
                       fieldId={fieldId}
                       errorMessage={errors[fieldId]}
+                      connectedMobile
                     />
-                  );
-                })}
-
-                {/* PLANTAR REFLEX */}
-                {(() => {
-                  const fieldId = `clinicalExamination.reflexes.${side.plantarKey}`;
-
-                  return (
-                    <ReflexField
-                      type="plantar"
-                      label="Plantar Reflex"
-                      value={reflexes[side.plantarKey]}
-                      onChange={(value) =>
-                        updatePlantarReflex(side.plantarKey, value)
-                      }
-                      disabled={readOnly}
-                      fieldId={fieldId}
-                      errorMessage={errors[fieldId]}
-                    />
-                  );
-                })()}
-              </div>
-            </div>
+                  </div>
+                );
+              })}
+            </Fragment>
           ))}
+          {sides_Reflexes.map((side) => {
+            const fieldId = `clinicalExamination.reflexes.${side.plantarKey}`;
+            return (
+              <div
+                key={side.heading}
+                data-mobile-reflex-anchor="plantar"
+                data-mobile-reflex-side={side.position}
+                className="relative z-10 min-w-0"
+                style={{
+                  gridColumn: side.position === "left" ? 1 : 3,
+                  gridRow: reflexQuestions.length + 2,
+                  minHeight: 78,
+                  paddingBottom: 12,
+                }}
+              >
+                <ReflexField
+                  type="plantar"
+                  label="Plantar Reflex"
+                  value={reflexes[side.plantarKey]}
+                  onChange={(value) =>
+                    updatePlantarReflex(side.plantarKey, value)
+                  }
+                  disabled={readOnly}
+                  ariaLabel={`${side.heading} Plantar Reflex`}
+                  fieldId={fieldId}
+                  errorMessage={errors[fieldId]}
+                  connectedMobile
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
+  );
+}
+
+function MobileReflexBodyDiagram({
+  measurement,
+}: {
+  measurement: MobileReflexMeasurement;
+}) {
+  const { width, height, controls } = measurement;
+  const center = width / 2;
+  const rowCenter = (site: MobileReflexAnchor) =>
+    (controls[site].left.y + controls[site].right.y) / 2;
+
+  // Derive the mobile figure from the existing geometry. Keep the head round
+  // and preserve arm/thigh inclinations; lengthen the vertical segments to
+  // reach the separated mobile control rows without changing desktop geometry.
+  const maxAnchorOffset = Math.max(
+    ...Object.values(REFLEX_ANCHORS).map((site) =>
+      Math.abs(site.rightX - BODY_CENTER),
+    ),
+  );
+  const controlWidth = Math.max(
+    ...Object.values(controls).flatMap((row) => [
+      row.left.width,
+      row.right.width,
+    ]),
+  );
+  const scale = Math.min(
+    REFLEX_DIAGRAM_LAYOUT.width / REFLEX_DIAGRAM_LAYOUT.viewBoxWidth,
+    (center - controlWidth - 5) / maxAnchorOffset,
+  );
+  const shoulder = Math.max(
+    2 * REFLEX_BODY_GEOMETRY.headRadius * scale + 8,
+    Math.min(
+      controls.brachioradialis.left.top,
+      controls.brachioradialis.right.top,
+    ) - 6,
+  );
+  const knee = rowCenter("patellar");
+  const ankle = rowCenter("plantar");
+  const elbow = shoulder + REFLEX_BODY_GEOMETRY.armDrop * scale;
+  const torsoEnd = knee - REFLEX_BODY_GEOMETRY.thighDrop * scale;
+  const mapX = (x: number) => center + (x - BODY_CENTER) * scale;
+  const mapY = (y: number) => {
+    if (y <= ELBOW_Y) return shoulder + (y - SHOULDER_Y) * scale;
+    if (y <= REFLEX_BODY_GEOMETRY.torsoEndY) {
+      return (
+        elbow +
+        ((y - ELBOW_Y) * (torsoEnd - elbow)) /
+          (REFLEX_BODY_GEOMETRY.torsoEndY - ELBOW_Y)
+      );
+    }
+    if (y <= KNEE_Y) return knee + (y - KNEE_Y) * scale;
+    return (
+      knee +
+      ((y - KNEE_Y) * (ankle - knee)) / (REFLEX_BODY_GEOMETRY.ankleY - KNEE_Y)
+    );
+  };
+
+  return (
+    <Box
+      component="svg"
+      viewBox={`0 0 ${width} ${height}`}
+      aria-hidden="true"
+      focusable="false"
+      className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+      sx={{ display: "block" }}
+    >
+      <circle
+        cx={center}
+        cy={mapY(REFLEX_BODY_GEOMETRY.headCenterY)}
+        r={REFLEX_BODY_GEOMETRY.headRadius * scale}
+        fill="none"
+        stroke="#475569"
+        strokeWidth="2"
+      />
+      {BODY_LINES.map(([x1, y1, x2, y2], index) => (
+        <line
+          key={index}
+          x1={mapX(x1)}
+          y1={mapY(y1)}
+          x2={mapX(x2)}
+          y2={mapY(y2)}
+          stroke="#475569"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      ))}
+      {(Object.keys(REFLEX_ANCHORS) as MobileReflexAnchor[]).map((anchor) => {
+        const site = REFLEX_ANCHORS[anchor];
+        const y = mapY(site.y);
+        return (
+          <g key={anchor}>
+            {(["left", "right"] as const).map((side) => {
+              const x = mapX(side === "left" ? site.rightX : site.leftX);
+              const control = controls[anchor][side];
+              return (
+                <g key={side}>
+                  <line
+                    x1={control.x}
+                    y1={control.y}
+                    x2={x}
+                    y2={y}
+                    stroke="#8ba6c4"
+                    strokeWidth="1.5"
+                  />
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="3.5"
+                    fill="#2563eb"
+                    stroke="#ffffff"
+                    strokeWidth="1"
+                  />
+                </g>
+              );
+            })}
+          </g>
+        );
+      })}
+    </Box>
   );
 }
 
@@ -6054,21 +6298,18 @@ export interface ReflexBodyDiagramProps {
   renderer?: "mui" | "svg";
 }
 
-// Expand the arms by 25%, preserving the 60° shoulder and 120° elbow angles.
-// The wider viewBox uses the original vertical scale (533.75 / 610 = 0.875),
-// so the desktop figure stays the same height; no neck or hip segment.
 const REFLEX_BODY_GEOMETRY = {
   centerX: 180,
   headCenterY: 80,
   headRadius: 58,
   shoulderY: 138,
-  armRun: 100,
+  armRun: 120,
   armDrop: 100 / Math.sqrt(3), // 60° to torso; 120° elbow bend.
   torsoEndY: 350,
-  thighRun: 70,
-  thighDrop: 70 / Math.sqrt(3), // 120° knee bend with vertical lower leg.
-  ankleY: 570,
-  footLength: 45, // Perpendicular (90°) to the lower leg.
+  thighRun: 120,
+  thighDrop: 100 / Math.sqrt(3), // 120° knee bend with vertical lower leg.
+  ankleY: 530,
+  footLength: 25, // Perpendicular (90°) to the lower leg.
 } as const;
 
 const BODY_CENTER = REFLEX_BODY_GEOMETRY.centerX;
@@ -6076,34 +6317,29 @@ const SHOULDER_Y = REFLEX_BODY_GEOMETRY.shoulderY;
 const ELBOW_Y = SHOULDER_Y + REFLEX_BODY_GEOMETRY.armDrop;
 const KNEE_Y = REFLEX_BODY_GEOMETRY.torsoEndY + REFLEX_BODY_GEOMETRY.thighDrop;
 
-// Anatomical anchors sit exactly on their corresponding line segments.
-// Larger row gaps keep labels, dropdowns, and error messages distinct.
 export const REFLEX_ANCHORS = {
   biceps: {
     label: "Biceps",
-    // Upper arm, close to shoulder: label and control ABOVE the arm.
-    y: SHOULDER_Y + REFLEX_BODY_GEOMETRY.armDrop * 0.66,
-    rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.armRun * 0.66,
-    leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.armRun * 0.66,
+    y: SHOULDER_Y + REFLEX_BODY_GEOMETRY.armDrop * 0.5,
+    rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.armRun * 0.5,
+    leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.armRun * 0.5,
     dropdownY: 105,
     connectorGap: 12,
   },
   brachioradialis: {
     label: "Brachioradialis",
-    // On the proximal FOREARM, 15% of the way from elbow to wrist.
-    y: ELBOW_Y - REFLEX_BODY_GEOMETRY.armDrop * 0.15,
-    rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.armRun * 1.15,
-    leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.armRun * 1.15,
-    dropdownY: 186,
-    connectorGap: 10,
+    y: ELBOW_Y,
+    rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.armRun,
+    leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.armRun,
+    dropdownY: 200,
+    connectorGap: 20,
   },
   triceps: {
     label: "Triceps",
-    // Lower upper arm: control BELOW the arm.
-    y: SHOULDER_Y + REFLEX_BODY_GEOMETRY.armDrop * 0.88,
-    rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.armRun * 0.88,
-    leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.armRun * 0.88,
-    dropdownY: 267,
+    y: SHOULDER_Y + REFLEX_BODY_GEOMETRY.armDrop * 0.75,
+    rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.armRun * 0.75,
+    leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.armRun * 0.75,
+    dropdownY: 237,
     connectorGap: 12,
   },
   patellar: {
@@ -6116,10 +6352,10 @@ export const REFLEX_ANCHORS = {
   },
   achilles: {
     label: "Achilles",
-    y: 503,
+    y: REFLEX_BODY_GEOMETRY.ankleY - 20,
     rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.thighRun,
     leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.thighRun,
-    dropdownY: 470,
+    dropdownY: 480,
     connectorGap: 14,
   },
   plantar: {
@@ -6127,8 +6363,8 @@ export const REFLEX_ANCHORS = {
     y: REFLEX_BODY_GEOMETRY.ankleY,
     rightX: BODY_CENTER - REFLEX_BODY_GEOMETRY.thighRun - 30,
     leftX: BODY_CENTER + REFLEX_BODY_GEOMETRY.thighRun + 30,
-    dropdownY: 560,
-    connectorGap: 12,
+    dropdownY: 530,
+    connectorGap: -5,
   },
 } as const;
 
@@ -6139,10 +6375,10 @@ export const REFLEX_DIAGRAM_LAYOUT = {
   height: 533.75,
   viewBoxWidth: 424,
   viewBoxMinX: -32,
-  maxStageWidth: 470,
+  maxStageWidth: 500,
   controlWidth: 112,
-  diagramTop: 10,
-  stageHeight: 520,
+  diagramTop: 0,
+  stageHeight: 480,
   controlCenterOffset: 12.5, // Half the unchanged 25px Select height.
 } as const;
 
@@ -6330,6 +6566,7 @@ interface ReflexScoreSelectProps {
   disabled?: boolean;
   errorMessage?: string;
   errorId?: string;
+  connectedMobile?: boolean;
 }
 
 interface PlantarReflexSelectProps {
@@ -6340,6 +6577,7 @@ interface PlantarReflexSelectProps {
   disabled?: boolean;
   errorMessage?: string;
   errorId?: string;
+  connectedMobile?: boolean;
 }
 
 type ReflexSelectProps = ReflexScoreSelectProps | PlantarReflexSelectProps;
@@ -6352,6 +6590,7 @@ function ReflexSelect(props: ReflexSelectProps) {
     disabled = false,
     errorMessage = "",
     errorId,
+    connectedMobile = false,
   } = props;
 
   const options =
@@ -6390,7 +6629,7 @@ function ReflexSelect(props: ReflexSelectProps) {
       size="small"
       disabled={disabled}
       error={hasError}
-      sx={{ width: { xs: "60%", md: "100%" } }}
+      sx={{ width: connectedMobile ? "100%" : { xs: "60%", md: "100%" } }}
     >
       <Select
         value={value ?? ""}
@@ -6413,7 +6652,7 @@ function ReflexSelect(props: ReflexSelectProps) {
           return option?.label ?? selected;
         }}
         sx={{
-          height: 25,
+          height: connectedMobile ? 36 : 25,
           borderRadius: "7px",
           backgroundColor: "#ffffff",
           fontSize: AFP_FONT_SIZE.reflexDropdown,
@@ -6479,7 +6718,8 @@ function ReflexSelect(props: ReflexSelectProps) {
             mt: 0.5,
             fontSize: AFP_FONT_SIZE.reflexDropdownValidation,
             lineHeight: 1.3,
-            whiteSpace: "nowrap",
+            whiteSpace: connectedMobile ? "normal" : "nowrap",
+            ...(connectedMobile ? { overflowWrap: "anywhere" } : {}),
           }}
         >
           {errorMessage}
