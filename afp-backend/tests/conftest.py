@@ -62,6 +62,7 @@ def make_payload(today: date) -> dict:
             "reflexes": {
                 "scores": {
                     "rightBiceps": "0", "leftBiceps": "1+",
+                    "rightTriceps": "2+", "leftTriceps": "3+",
                     "rightBrachioradialis": "2+", "leftBrachioradialis": "3+",
                     "rightPatellar": "4+", "leftPatellar": "0",
                     "rightAchilles": "2+", "leftAchilles": "2+",

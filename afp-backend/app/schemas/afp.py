@@ -90,15 +90,23 @@ class TravelHistory(FrontendModel):
     notification_date: FormDate
 
 
+
 class ReflexScores(FrontendModel):
     right_biceps: ReflexCode
     left_biceps: ReflexCode
+
+    right_triceps: ReflexCode
+    left_triceps: ReflexCode
+
     right_brachioradialis: ReflexCode
     left_brachioradialis: ReflexCode
+
     right_patellar: ReflexCode
     left_patellar: ReflexCode
+
     right_achilles: ReflexCode
     left_achilles: ReflexCode
+
 
 
 class ReflexExamination(FrontendModel):

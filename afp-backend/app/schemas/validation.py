@@ -231,13 +231,22 @@ def _complete_rules(
 
     reflexes = data.clinical_examination.reflexes
     for name in (
-        "right_biceps", "left_biceps",
-        "right_brachioradialis", "left_brachioradialis",
-        "right_patellar", "left_patellar", "right_achilles", "left_achilles",
+        "right_biceps",
+        "left_biceps",
+        "right_triceps",
+        "left_triceps",
+        "right_brachioradialis",
+        "left_brachioradialis",
+        "right_patellar",
+        "left_patellar",
+        "right_achilles",
+        "left_achilles",
     ):
         _required(
-            errors, f"clinicalExamination.reflexes.scores.{_camel(name)}",
-            getattr(reflexes.scores, name), "Select reflex score.",
+            errors,
+            f"clinicalExamination.reflexes.scores.{_camel(name)}",
+            getattr(reflexes.scores, name),
+            "Select reflex score.",
         )
     for name in ("right_plantar_reflex", "left_plantar_reflex"):
         _required(errors, f"clinicalExamination.reflexes.{_camel(name)}",

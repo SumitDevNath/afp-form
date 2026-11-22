@@ -52,6 +52,8 @@ YES_NO_PENDING_FIELDS = (
 REFLEX_FIELDS = (
     "right_biceps",
     "left_biceps",
+    "right_triceps",
+    "left_triceps",
     "right_brachioradialis",
     "left_brachioradialis",
     "right_patellar",
@@ -282,6 +284,8 @@ class AFPClinicalExamination(Base):
     # Eight bilateral reflex scores
     right_biceps: Mapped[str | None] = mapped_column(String(2))
     left_biceps: Mapped[str | None] = mapped_column(String(2))
+    right_triceps: Mapped[str | None] = mapped_column(String(2),nullable=True,)
+    left_triceps: Mapped[str | None] = mapped_column(String(2), nullable=True,)
     right_brachioradialis: Mapped[str | None] = mapped_column(String(2))
     left_brachioradialis: Mapped[str | None] = mapped_column(String(2))
     right_patellar: Mapped[str | None] = mapped_column(String(2))
