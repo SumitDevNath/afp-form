@@ -311,6 +311,10 @@ export type YesNoPending = "yes" | "no" | "pending" | null;
 
 export type AFPScreeningStatus = "pending" | "eligible" | "not_eligible";
 
+// The specified operational cutoffs are calendar days, not calendar months.
+export const AFP_NO_STOOL_AFTER_DAYS = 90;
+export const AFP_INVESTIGATION_MAX_DAYS = 180;
+
 export type AFPParalysisSite =
   | "right_arm"
   | "left_arm"
@@ -484,8 +488,10 @@ export interface AFPFormData {
   travelHistory: AFPTravelHistory;
   clinicalExamination: AFPClinicalExamination;
   previousHealthcareContacts: AFPPreviousHealthcareContacts;
-  additionalInformation: AFPAdditionalInformation;
 }
+
+// The ORI form has its own state and validation, independent of AFP submission.
+export type AFPORIFormData = AFPAdditionalInformation;
 
 export interface AFPFacilityOption {
   value: string;
@@ -496,6 +502,22 @@ export interface AFPSuspectedDiagnosisOption {
   value: string;
   label: string;
 }
+
+/** Source: supplied AFP differential-diagnosis diagram. */
+export const AFP_SUSPECTED_DIAGNOSIS_OPTIONS: AFPSuspectedDiagnosisOption[] = [
+  { value: "Polio", label: "Polio" },
+  { value: "GBS", label: "GBS" },
+  { value: "TM", label: "TM" },
+  { value: "Encephalitis", label: "Encephalitis" },
+  { value: "Meningitis", label: "Meningitis" },
+  { value: "Enterovirus", label: "Enterovirus" },
+  { value: "Eco virus", label: "Eco virus" },
+  { value: "Traumatic neuritis", label: "Traumatic neuritis" },
+  { value: "Tumor", label: "Tumor" },
+  { value: "Paralytic disease", label: "Paralytic disease" },
+  { value: "Diphtheria neuropathy", label: "Diphtheria neuropathy" },
+  { value: "Other", label: "Other" },
+];
 
 export type AFPFormUpdater = (previous: AFPFormData) => AFPFormData;
 
@@ -650,8 +672,20 @@ export function getAFPScreeningStatus(
     return "pending";
   }
 
-  // Local workflow rule: onset must have occurred strictly fewer than 60 days ago.
-  return daysSinceOnset < 60 ? "eligible" : "not_eligible";
+  // The investigation remains eligible on day 180; after day 180 it is not.
+  return daysSinceOnset <= AFP_INVESTIGATION_MAX_DAYS
+    ? "eligible"
+    : "not_eligible";
+}
+
+export function getAFPOnsetGuidance(
+  paralysisOnsetDate: string,
+): "no_investigation" | "investigate_without_stool" | null {
+  const days = getAFPOnsetAgeDays(paralysisOnsetDate);
+  if (days === null || days < 0) return null;
+  if (days > AFP_INVESTIGATION_MAX_DAYS) return "no_investigation";
+  if (days > AFP_NO_STOOL_AFTER_DAYS) return "investigate_without_stool";
+  return null;
 }
 
 // ===== Merged source: afpFacilities.ts =====
@@ -1082,7 +1116,6 @@ export const createInitialAFPFormData = (): AFPFormData => ({
   vaccinationHistory: createInitialAFPVaccinationHistory(),
   travelHistory: createInitialAFPTravelHistory(),
   clinicalExamination: createInitialAFPClinicalExamination(),
-  additionalInformation: createInitialAFPAdditionalInformation(),
 });
 
 export const createInitialAFPAdditionalInformation =
@@ -1168,6 +1201,49 @@ export function useAFPForm(): AFPFormContextValue {
     throw new Error("useAFPForm must be used inside AFPFormProvider");
   }
 
+  return context;
+}
+
+// ===== Independent Outbreak Response Immunization (ORI) form context =====
+interface AFPORIFormContextValue {
+  data: AFPORIFormData;
+  updateData: (updater: (previous: AFPORIFormData) => AFPORIFormData) => void;
+  readOnly: boolean;
+}
+
+const AFPORIFormContext = createContext<AFPORIFormContextValue | null>(null);
+
+function AFPORIFormProvider({
+  children,
+  value,
+  onChange,
+  readOnly = false,
+}: {
+  children: ReactNode;
+  value: AFPORIFormData;
+  onChange: (next: AFPORIFormData) => void;
+  readOnly?: boolean;
+}) {
+  const updateData = useCallback(
+    (updater: (previous: AFPORIFormData) => AFPORIFormData) => {
+      if (!readOnly) onChange(updater(value));
+    },
+    [onChange, readOnly, value],
+  );
+  const context = useMemo(
+    () => ({ data: value, updateData, readOnly }),
+    [value, updateData, readOnly],
+  );
+  return (
+    <AFPORIFormContext.Provider value={context}>
+      {children}
+    </AFPORIFormContext.Provider>
+  );
+}
+
+function useAFPORIForm(): AFPORIFormContextValue {
+  const context = useContext(AFPORIFormContext);
+  if (!context) throw new Error("ORI fields must be inside AFPORIFormProvider");
   return context;
 }
 
@@ -1483,13 +1559,6 @@ export function validateSignsSymptoms(data: AFPFormData): AFPValidationErrors {
   if (signs.childAtHealthFacility === "yes") {
     const facility = signs.healthFacility;
 
-    requireAFPField(
-      errors,
-      "signsSymptoms.healthFacility.selectedFacilityOption",
-      facility.selectedFacilityOption,
-      "Health facility",
-    );
-
     if (facility.selectedFacilityOption === AFP_OTHER_FACILITY_VALUE) {
       requireAFPField(
         errors,
@@ -1504,9 +1573,8 @@ export function validateSignsSymptoms(data: AFPFormData): AFPValidationErrors {
 
     const date = facility.notificationDate;
 
-    requireAFPField(errors, dateId, date, "Date of notification");
-
-    if (!errors[dateId]) {
+    // Optional date: validate format/range only when a value is entered.
+    if (date.trim()) {
       if (!isValidDateFormat(date)) {
         errors[dateId] = "Enter date in DD-MM-YYYY format.";
       } else if (!isValidCalendarDate(date)) {
@@ -1516,13 +1584,7 @@ export function validateSignsSymptoms(data: AFPFormData): AFPValidationErrors {
       }
     }
 
-    // Medical record
-    requireAFPField(
-      errors,
-      "signsSymptoms.healthFacility.medicalRecordNumber",
-      facility.medicalRecordNumber,
-      "Medical record #",
-    );
+    // Hospital Record is optional; preserve the existing API key.
   }
 
   return errors;
@@ -1783,112 +1845,57 @@ function validateContact(
   errors: AFPValidationErrors,
   contact: AFPHealthcareContact,
 ): void {
-  // Stable contact ID prevents errors moving to another contact
-  // when one is removed.
-  const prefix = `previousHealthcareContacts.contacts.${contact.id}`;
-
-  requireAFPField(
-    errors,
-    `${prefix}.providerName`,
-    contact.providerName,
-    "Provider name",
-  );
-
-  requireAFPField(errors, `${prefix}.address`, contact.address, "Address");
-
-  const dateId = `${prefix}.dateCaseVisited`;
+  const dateId = `previousHealthcareContacts.contacts.${contact.id}.dateCaseVisited`;
   const date = contact.dateCaseVisited;
 
-  if (!date.trim()) {
-    errors[dateId] = "Date is not filled in.";
-  } else if (!isValidDateFormat(date)) {
-    errors[dateId] = "Enter DD-MM-YYYY.";
-  } else if (!isValidCalendarDate(date)) {
-    errors[dateId] = "Invalid calendar date.";
-  } else if (isFutureDate(date)) {
-    errors[dateId] = "No future dates.";
+  // All contact fields are optional, but supplied dates must be valid.
+  if (date.trim()) {
+    if (!isValidDateFormat(date)) {
+      errors[dateId] = "Enter DD-MM-YYYY.";
+    } else if (!isValidCalendarDate(date)) {
+      errors[dateId] = "Invalid calendar date.";
+    } else if (isFutureDate(date)) {
+      errors[dateId] = "No future dates.";
+    }
   }
-
-  if (contact.alreadyInNetwork === null) {
-    errors[`${prefix}.alreadyInNetwork`] = "Select an answer.";
-  }
-
-  if (contact.reportedCase === null) {
-    errors[`${prefix}.reportedCase`] = "Select Yes or No.";
-  }
-
-  requireAFPField(
-    errors,
-    `${prefix}.actionTakenPlanned`,
-    contact.actionTakenPlanned,
-    "Action taken / planned",
-  );
 }
 
 export function validatePreviousHealthcareContacts(
   data: AFPFormData,
-  suspectedDiagnosisOptions: readonly AFPSuspectedDiagnosisOption[] = [],
 ): AFPValidationErrors {
   const errors: AFPValidationErrors = {};
-
   if (getAFPScreeningStatus(data.clinicalInformation) !== "eligible") {
     return errors;
   }
 
   const history = data.previousHealthcareContacts;
+  for (const contact of history.contacts) validateContact(errors, contact);
 
-  for (const contact of history.contacts) {
-    validateContact(errors, contact);
-  }
-
+  // Only suspected diagnosis is required in this section, even when
+  // the diagnosis-options API has not yet been configured.
   requireAFPField(
     errors,
-    "previousHealthcareContacts.firstContactCategory",
-    history.firstContactCategory,
-    "Category of the first contact",
+    "previousHealthcareContacts.suspectedDiagnosis",
+    history.suspectedDiagnosis,
+    "Suspected diagnosis",
   );
 
-  if (history.firstContactCategory === "Other") {
-    requireAFPField(
-      errors,
-      "previousHealthcareContacts.firstContactCategoryOther",
-      history.firstContactCategoryOther,
-      "Other contact category",
-    );
+  // "Other" is only a temporary selection. The actual disease name is stored
+  // in suspectedDiagnosis, preserving the existing backend request shape.
+  if (history.suspectedDiagnosis === "Other") {
+    errors["previousHealthcareContacts.suspectedDiagnosisOther"] =
+      "Enter the other suspected disease.";
   }
-
-  // requireAFPField(
-  //   errors,
-  //   "previousHealthcareContacts.additionalComments",
-  //   history.additionalComments,
-  //   "Additional comments",
-  // );
-
-  // The dropdown is disabled if no options are configured.
-  if (suspectedDiagnosisOptions.length > 0) {
-    requireAFPField(
-      errors,
-      "previousHealthcareContacts.suspectedDiagnosis",
-      history.suspectedDiagnosis,
-      "Suspected diagnosis",
-    );
-  }
-
   return errors;
 }
 
 // ===== Merged source: validateAdditionalInformation.ts =====
 export function validateAdditionalInformation(
-  data: AFPFormData,
+  additional: AFPORIFormData,
 ): AFPValidationErrors {
   const errors: AFPValidationErrors = {};
 
-  // Section is hidden unless AFP screening is eligible.
-  if (getAFPScreeningStatus(data.clinicalInformation) !== "eligible") {
-    return errors;
-  }
-
-  const additional = data.additionalInformation;
+  // ORI is independently validated on /ori, not gated by AFP screening.
 
   // QUESTION 1
   requireAFPField(
@@ -1950,14 +1957,12 @@ export function validateAdditionalInformation(
 interface Props {
   children: ReactNode;
   fullFormReady?: boolean;
-  suspectedDiagnosisOptions?: AFPSuspectedDiagnosisOption[];
   onSubmit?: (data: AFPFormData) => Promise<{ id: string }>;
 }
 
 function AFPValidationBridge({
   children,
   fullFormReady = true,
-  suspectedDiagnosisOptions,
   onSubmit,
 }: Props) {
   const { data } = useAFPForm();
@@ -1970,14 +1975,9 @@ function AFPValidationBridge({
         validateVaccinationHistory,
         validateTravelHistory,
         validateClinicalExamination,
-        (formData) =>
-          validatePreviousHealthcareContacts(
-            formData,
-            suspectedDiagnosisOptions,
-          ),
-        validateAdditionalInformation,
+        validatePreviousHealthcareContacts,
       ),
-    [suspectedDiagnosisOptions],
+    [],
   );
 
   return (
@@ -1995,8 +1995,11 @@ function AFPValidationBridge({
 
 // Submit control
 
-function AFPSubmitButton() {
-  const { readOnly } = useAFPForm();
+function AFPSubmitButton({ label = "Submit Form" }: { label?: string } = {}) {
+  const investigationContext = useContext(AFPFormContext);
+  const oriContext = useContext(AFPORIFormContext);
+  const readOnly =
+    investigationContext?.readOnly ?? oriContext?.readOnly ?? false;
 
   const { submitForm, isComplete, ready, isSubmitting, feedback } =
     useAFPValidation();
@@ -2036,7 +2039,7 @@ function AFPSubmitButton() {
             },
           }}
         >
-          {isSubmitting ? "Saving..." : "Submit Form"}
+          {isSubmitting ? "Saving..." : label}
         </Button>
 
         {feedback && (
@@ -2104,7 +2107,6 @@ function AFPFormContent({
           <PreviousHealthcareContactsSection
             suspectedDiagnosisOptions={suspectedDiagnosisOptions}
           />
-          <AdditionalInformationSection />
         </>
       )}
 
@@ -2119,15 +2121,12 @@ export function AFPInvestigationForm({
   onChange,
   readOnly = false,
   facilityOptions,
-  suspectedDiagnosisOptions,
+  suspectedDiagnosisOptions = AFP_SUSPECTED_DIAGNOSIS_OPTIONS,
   onSubmit,
 }: AFPInvestigationFormProps) {
   return (
     <AFPFormProvider value={value} onChange={onChange} readOnly={readOnly}>
-      <AFPValidationBridge
-        suspectedDiagnosisOptions={suspectedDiagnosisOptions}
-        onSubmit={onSubmit}
-      >
+      <AFPValidationBridge onSubmit={onSubmit}>
         <AFPFormContent
           facilityOptions={facilityOptions}
           suspectedDiagnosisOptions={suspectedDiagnosisOptions}
@@ -2150,18 +2149,7 @@ const demoFacilityOptions: AFPFacilityOption[] = [
   },
 ];
 
-const demoDiagnosisOptions: AFPSuspectedDiagnosisOption[] = [
-  {
-    value: "development-diagnosis-1",
-    label: "Development Diagnosis 1",
-  },
-  {
-    value: "development-diagnosis-2",
-    label: "Development Diagnosis 2",
-  },
-];
-
-export default function AFPDemoPage() {
+function AFPInvestigationDemoPage() {
   const [afpData, setAfpData] = useState<AFPFormData>(createInitialAFPFormData);
 
   // Record identity is kept in memory for this local demo only.
@@ -2259,7 +2247,6 @@ export default function AFPDemoPage() {
         value={afpData}
         onChange={setAfpData}
         facilityOptions={demoFacilityOptions}
-        suspectedDiagnosisOptions={demoDiagnosisOptions}
         onSubmit={handleApiSubmit}
       />
 
@@ -2478,12 +2465,12 @@ function QuestionCard({
 // =========================================================
 
 function AdditionalInformationSection() {
-  const { data, updateData, readOnly } = useAFPForm();
+  const { data, updateData, readOnly } = useAFPORIForm();
 
   // NEW: Shared Submit Form validation.
   const { errors, attempted } = useAFPValidation();
 
-  const additional = data.additionalInformation;
+  const additional = data;
 
   // Existing local touched states — unchanged.
   const [additionalCountTouched, setAdditionalCountTouched] = useState(false);
@@ -2499,10 +2486,7 @@ function AdditionalInformationSection() {
   const updateAdditional = (
     updater: (previous: AFPAdditionalInformation) => AFPAdditionalInformation,
   ) => {
-    updateData((previous) => ({
-      ...previous,
-      additionalInformation: updater(previous.additionalInformation),
-    }));
+    updateData(updater);
   };
 
   const updateAdditionalField = <K extends keyof AFPAdditionalInformation>(
@@ -2632,7 +2616,7 @@ function AdditionalInformationSection() {
       {/* SECTION HEADER */}
       <div className="border-b border-[#dce7f2] px-5 py-3 sm:px-7">
         <h2 className="m-0 text-(length:--afp-font-size-section-heading) font-(--afp-font-weight-section-heading) text-[#173b69]">
-          Additional Information
+          Outbreak response immunization (ORI)
         </h2>
       </div>
 
@@ -2972,6 +2956,9 @@ function ClinicalInformationSection() {
 
   const clinicalInformation = data.clinicalInformation;
   const screeningStatus = getAFPScreeningStatus(clinicalInformation);
+  const onsetGuidance = getAFPOnsetGuidance(
+    clinicalInformation.paralysisOnsetDate,
+  );
 
   // Update Yes/No answers and dependent sections
   const updateYesNoField = (field: YesNoClinicalField, value: YesNo) => {
@@ -3011,10 +2998,6 @@ function ClinicalInformationSection() {
         clinicalExamination: isEligible
           ? previous.clinicalExamination
           : createInitialAFPClinicalExamination(),
-
-        additionalInformation: isEligible
-          ? previous.additionalInformation
-          : createInitialAFPAdditionalInformation(),
       };
     });
   };
@@ -3030,8 +3013,9 @@ function ClinicalInformationSection() {
       const nextStatus = getAFPScreeningStatus(nextClinicalInformation);
       const onsetAgeDays = getAFPOnsetAgeDays(value);
       // Preserve entered details during incomplete edits. Reset only when a
-      // valid onset date establishes that the 60-day window was exceeded.
-      const outsideWindow = onsetAgeDays !== null && onsetAgeDays >= 60;
+      // valid onset date establishes that the 180-day window was exceeded.
+      const outsideWindow =
+        onsetAgeDays !== null && onsetAgeDays > AFP_INVESTIGATION_MAX_DAYS;
 
       return {
         ...previous,
@@ -3050,9 +3034,6 @@ function ClinicalInformationSection() {
         clinicalExamination: outsideWindow
           ? createInitialAFPClinicalExamination()
           : previous.clinicalExamination,
-        additionalInformation: outsideWindow
-          ? createInitialAFPAdditionalInformation()
-          : previous.additionalInformation,
       };
     });
   };
@@ -3105,6 +3086,29 @@ function ClinicalInformationSection() {
           {rightQuestions.map(renderQuestion)}
         </div>
       </div>
+
+      {/* Onset-specific surveillance guidance (does not alter stored data). */}
+      {onsetGuidance === "no_investigation" && (
+        <div
+          role="status"
+          className="mx-5 mb-4 rounded-lg border border-[#f0cf8c] bg-[#fff9ec] px-4 py-3 text-[#8a5a13] sm:mx-7"
+        >
+          As this AFP case is reported after 6 months of onset of paralysis, no
+          need to investigate the case but local effort should be taken to
+          strengthen surveillance with this evidence of surveillance failure.
+        </div>
+      )}
+      {onsetGuidance === "investigate_without_stool" &&
+        screeningStatus === "eligible" && (
+          <div
+            role="status"
+            className="mx-5 mb-4 rounded-lg border border-[#f0cf8c] bg-[#fff9ec] px-4 py-3 text-[#8a5a13] sm:mx-7"
+          >
+            As this AFP case is reported after 3 months of onset, the case
+            investigation should be done but no stool collection is indicated
+            including contact sample collection.
+          </div>
+        )}
 
       {/* SCREENING DIAGNOSIS */}
       {screeningStatus === "not_eligible" && (
@@ -3865,6 +3869,22 @@ function PreviousHealthcareContactsSection({
 
   const history = data.previousHealthcareContacts;
 
+  // Keep "Other" available even when the choices are supplied by another service.
+  const diagnosisOptions = suspectedDiagnosisOptions.some(
+    (option) => option.value === "Other",
+  )
+    ? suspectedDiagnosisOptions
+    : [...suspectedDiagnosisOptions, { value: "Other", label: "Other" }];
+
+  // A previously saved free-text diagnosis is represented as "Other" in the
+  // dropdown, while its actual disease name remains in suspectedDiagnosis.
+  const isOtherDiagnosis =
+    history.suspectedDiagnosis === "Other" ||
+    (history.suspectedDiagnosis.trim().length > 0 &&
+      !diagnosisOptions.some(
+        (option) => option.value === history.suspectedDiagnosis,
+      ));
+
   // =======================================================
   // EXISTING UPDATE FUNCTIONS — UNCHANGED
   // =======================================================
@@ -3949,7 +3969,7 @@ function PreviousHealthcareContactsSection({
 
   // Suspected diagnosis
   const handleDiagnosisChange = (event: SelectChangeEvent<string>) => {
-    const option = suspectedDiagnosisOptions.find(
+    const option = diagnosisOptions.find(
       (item) => item.value === event.target.value,
     );
 
@@ -3973,6 +3993,8 @@ function PreviousHealthcareContactsSection({
   const commentsId = "previousHealthcareContacts.additionalComments";
 
   const diagnosisId = "previousHealthcareContacts.suspectedDiagnosis";
+  // UI-only validation path: the API continues to send suspectedDiagnosis.
+  const diagnosisOtherId = "previousHealthcareContacts.suspectedDiagnosisOther";
 
   // =======================================================
   // UI — ORIGINAL LAYOUT PRESERVED
@@ -4021,6 +4043,14 @@ function PreviousHealthcareContactsSection({
             >
               + Add more contacts
             </Button>
+            <Typography
+              sx={{
+                fontSize: AFP_FONT_SIZE.contactFieldLabel,
+                color: "#617996",
+              }}
+            >
+              start from most recent contracts and proceed accordingly.
+            </Typography>
           </div>
 
           {/* CONTACT LIST — RESPONSIVE GRID */}
@@ -4128,28 +4158,60 @@ function PreviousHealthcareContactsSection({
               <FieldLabel
                 fieldId={diagnosisId}
                 className={sideLabelClass}
-                required={suspectedDiagnosisOptions.length > 0}
+                required
               >
                 Suspected diagnosis
               </FieldLabel>
 
               <OptionsSelect
-                value={history.suspectedDiagnosis}
-                options={suspectedDiagnosisOptions}
+                value={isOtherDiagnosis ? "Other" : history.suspectedDiagnosis}
+                options={diagnosisOptions}
                 onChange={handleDiagnosisChange}
-                placeholder={
-                  suspectedDiagnosisOptions.length > 0
-                    ? "Select from the list of Disease"
-                    : "No diagnosis options configured"
-                }
+                placeholder="Select from the list of Disease"
                 placeholderClassName="text-[#475569]"
                 ariaLabel="Suspected diagnosis"
-                disabled={readOnly || suspectedDiagnosisOptions.length === 0}
+                disabled={readOnly}
                 wrapMenuItems
                 error={Boolean(errors[diagnosisId])}
                 errorId={`${diagnosisId}-error`}
               />
             </ValidatedField>
+
+            {/* OTHER SUSPECTED DIAGNOSIS — rendered only when Other is selected */}
+            {isOtherDiagnosis && (
+              <ValidatedField
+                fieldId={diagnosisOtherId}
+                error={errors[diagnosisOtherId]}
+                className={`mt-3 ${errorSpacing}`}
+              >
+                <FieldLabel
+                  fieldId={diagnosisOtherId}
+                  className={sideLabelClass}
+                  required
+                >
+                  Specify other disease
+                </FieldLabel>
+                <CompactTextField
+                  value={
+                    history.suspectedDiagnosis === "Other"
+                      ? ""
+                      : history.suspectedDiagnosis
+                  }
+                  onChange={(value) =>
+                    updateHistory((previous) => ({
+                      ...previous,
+                      suspectedDiagnosis: value.trim() ? value : "Other",
+                    }))
+                  }
+                  placeholder="Enter other suspected disease"
+                  ariaLabel="Specify other suspected disease"
+                  maxLength={250}
+                  disabled={readOnly}
+                  error={Boolean(errors[diagnosisOtherId])}
+                  errorId={`${diagnosisOtherId}-error`}
+                />
+              </ValidatedField>
+            )}
           </div>
 
           {/* RIGHT COLUMN: ADDITIONAL COMMENTS */}
@@ -5412,7 +5474,7 @@ function SignsSymptomsSection({ facilityOptions }: SignsSymptomsSectionProps) {
                 htmlFor="afp-medical-record-number"
                 className={`${fieldLabelClass} lg:leading-4`}
               >
-                Medical record #
+                Hospital Record
               </FieldLabel>
 
               <TextField
@@ -6233,11 +6295,7 @@ function MuscleStrengthSelect({
 
           const numericValue = Number(selected);
 
-          const option = MUSCLE_STRENGTH_OPTIONS.find(
-            (item) => item.value === numericValue,
-          );
-
-          return option?.label ?? selected;
+          return String(numericValue);
         }}
         sx={{
           minHeight: 38,
@@ -6248,7 +6306,9 @@ function MuscleStrengthSelect({
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
-            px: "10px",
+            justifyContent: value === null ? "flex-start" : "center",
+            textAlign: value === null ? "left" : "center",
+            px: value === null ? "10px" : "30px !important",
             py: "7px",
             pr: "30px !important",
             overflow: "hidden",
@@ -6284,7 +6344,7 @@ function MuscleStrengthSelect({
       >
         {MUSCLE_STRENGTH_OPTIONS.map((option) => (
           <MenuItem key={option.value} value={String(option.value)}>
-            {option.label}
+            {`${option.value} | ${option.label}`}
           </MenuItem>
         ))}
       </Select>
@@ -6649,7 +6709,7 @@ function ReflexSelect(props: ReflexSelectProps) {
 
           const option = options.find((item) => item.value === selected);
 
-          return option?.label ?? selected;
+          return type === "score" ? selected : (option?.label ?? selected);
         }}
         sx={{
           height: connectedMobile ? 36 : 25,
@@ -6660,6 +6720,9 @@ function ReflexSelect(props: ReflexSelectProps) {
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
+            justifyContent: value === null ? "flex-start" : "center",
+            textAlign: value === null ? "left" : "center",
+            ...(value !== null ? { pl: "18px !important" } : {}),
             py: "2px",
             pr: "18px !important",
             overflow: "hidden",
@@ -6703,7 +6766,9 @@ function ReflexSelect(props: ReflexSelectProps) {
       >
         {options.map((option) => (
           <MenuItem key={option.value} value={option.value}>
-            {option.label}
+            {type === "score"
+              ? `${option.value} | ${option.label}`
+              : option.label}
           </MenuItem>
         ))}
       </Select>
@@ -7218,10 +7283,6 @@ const AFP_REQUIRED_ALWAYS = new Set<string>([
   "signsSymptoms.sensationPresentAtParalysisSite",
   "signsSymptoms.childAtHealthFacility",
   "signsSymptoms.siteOfParalysis",
-  "previousHealthcareContacts.firstContactCategory",
-  // "previousHealthcareContacts.additionalComments",
-  "additionalInformation.searchForAdditionalCases",
-  "additionalInformation.outbreakResponseImmunizationDone",
 ]);
 
 function isAFPFieldRequired(fieldId: string, data: AFPFormData): boolean {
@@ -7233,21 +7294,15 @@ function isAFPFieldRequired(fieldId: string, data: AFPFormData): boolean {
 
   if (AFP_REQUIRED_ALWAYS.has(fieldId)) return true;
   if (fieldId.startsWith("clinicalExamination.")) return true;
-  if (fieldId.startsWith("previousHealthcareContacts.contacts.")) return true;
 
   const signs = data.signsSymptoms;
   const vaccination = data.vaccinationHistory;
   const travel = data.travelHistory;
-  const history = data.previousHealthcareContacts;
-  const additional = data.additionalInformation;
+  // ORI is a separate form and is not part of AFP investigation state.
 
   switch (fieldId) {
     case "signsSymptoms.otherParalysisSite":
       return signs.siteOfParalysis.includes("other");
-    case "signsSymptoms.healthFacility.selectedFacilityOption":
-    case "signsSymptoms.healthFacility.notificationDate":
-    case "signsSymptoms.healthFacility.medicalRecordNumber":
-      return signs.childAtHealthFacility === "yes";
     case "signsSymptoms.healthFacility.otherFacilityName":
       return (
         signs.childAtHealthFacility === "yes" &&
@@ -7271,19 +7326,8 @@ function isAFPFieldRequired(fieldId: string, data: AFPFormData): boolean {
       return (
         travel.travelOutsideAreaLast30Days && travel.notifiedToConcernedDsfpSimo
       );
-    case "previousHealthcareContacts.firstContactCategoryOther":
-      return history.firstContactCategory === "Other";
     case "previousHealthcareContacts.suspectedDiagnosis":
-      return false; // Enable via required override when options are configured.
-    case "additionalInformation.numberOfAdditionalCases":
-      return (
-        additional.searchForAdditionalCases === "yes" &&
-        additional.additionalCasesIdentified === "yes"
-      );
-    case "additionalInformation.numberOfChildrenVaccinated":
-      return additional.outbreakResponseImmunizationDone === "yes";
-    case "additionalInformation.outbreakResponseExplanation":
-      return additional.outbreakResponseImmunizationDone === "no";
+      return true;
     default:
       return (
         vaccination.available &&
@@ -7292,6 +7336,25 @@ function isAFPFieldRequired(fieldId: string, data: AFPFormData): boolean {
         ) ||
           fieldId === "vaccinationHistory.opvGivenAfterParalysis")
       );
+  }
+}
+
+function isAFPORIFieldRequired(fieldId: string, data: AFPORIFormData): boolean {
+  switch (fieldId) {
+    case "additionalInformation.searchForAdditionalCases":
+    case "additionalInformation.outbreakResponseImmunizationDone":
+      return true;
+    case "additionalInformation.numberOfAdditionalCases":
+      return (
+        data.searchForAdditionalCases === "yes" &&
+        data.additionalCasesIdentified === "yes"
+      );
+    case "additionalInformation.numberOfChildrenVaccinated":
+      return data.outbreakResponseImmunizationDone === "yes";
+    case "additionalInformation.outbreakResponseExplanation":
+      return data.outbreakResponseImmunizationDone === "no";
+    default:
+      return false;
   }
 }
 
@@ -7312,8 +7375,16 @@ function FieldLabel({
   htmlFor,
   required,
 }: FieldLabelProps) {
-  const { data } = useAFPForm();
-  const showRequired = required ?? isAFPFieldRequired(fieldId, data);
+  const investigationContext = useContext(AFPFormContext);
+  const oriContext = useContext(AFPORIFormContext);
+  if (!investigationContext && !oriContext) {
+    throw new Error("FieldLabel requires an investigation or ORI provider");
+  }
+  const showRequired =
+    required ??
+    (oriContext
+      ? isAFPORIFieldRequired(fieldId, oriContext.data)
+      : isAFPFieldRequired(fieldId, investigationContext!.data));
 
   const content = (
     <>
@@ -7683,5 +7754,110 @@ function YesNoUnknownField({
         <ToggleButton value="unknown">Unknown</ToggleButton>
       </ToggleButtonGroup>
     </FormControl>
+  );
+}
+
+// The ORI page owns independent state; it never calls the AFP investigation API.
+// Its submit control validates locally until an approved ORI backend is connected.
+export function AFPORIStandalonePage() {
+  const [oriData, setOriData] = useState<AFPORIFormData>(
+    createInitialAFPAdditionalInformation,
+  );
+  return (
+    <Box
+      component="main"
+      style={AFP_TYPOGRAPHY_VARIABLES}
+      className="mx-auto w-full max-w-350 px-3 py-6 sm:px-6 lg:py-8"
+    >
+      <Box className="mb-6">
+        <Typography
+          component="h1"
+          sx={{
+            color: "#173b69",
+            fontSize: {
+              xs: AFP_FONT_SIZE.pageTitleMobile,
+              sm: AFP_FONT_SIZE.pageTitleDesktop,
+            },
+            fontWeight: AFP_FONT_WEIGHT.pageTitle,
+          }}
+        >
+          Outbreak response immunization (ORI)
+        </Typography>
+      </Box>
+      <AFPORIFormProvider value={oriData} onChange={setOriData}>
+        <AFPValidationProvider
+          data={oriData}
+          validate={validateAdditionalInformation}
+          fullFormReady
+        >
+          <div className="space-y-4" style={AFP_TYPOGRAPHY_VARIABLES}>
+            <AdditionalInformationSection />
+            <AFPSubmitButton label="Validate ORI" />
+          </div>
+        </AFPValidationProvider>
+      </AFPORIFormProvider>
+      <Paper
+        variant="outlined"
+        sx={{ mt: 4, borderRadius: "12px", overflow: "hidden" }}
+      >
+        <Box
+          sx={{
+            px: 2,
+            py: 1.5,
+            borderBottom: "1px solid #e2e8f0",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <Typography
+            component="h2"
+            sx={{
+              color: "#173b69",
+              fontSize: AFP_FONT_SIZE.developmentPanelTitle,
+              fontWeight: AFP_FONT_WEIGHT.developmentPanelTitle,
+            }}
+          >
+            ORI Development State
+          </Typography>
+          <Typography
+            sx={{
+              mt: 0.25,
+              color: "#64748b",
+              fontSize: AFP_FONT_SIZE.developmentPanelDescription,
+            }}
+          >
+            Local ORI state only. No backend request is made on this page.
+          </Typography>
+        </Box>
+        <Box
+          component="pre"
+          sx={{
+            m: 0,
+            p: 2,
+            maxHeight: 600,
+            overflow: "auto",
+            backgroundColor: "#0f172a",
+            color: "#e2e8f0",
+            fontFamily: "Consolas, 'Courier New', monospace",
+            fontSize: AFP_FONT_SIZE.developmentJsonPreview,
+            lineHeight: 1.55,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {JSON.stringify(oriData, null, 2)}
+        </Box>
+      </Paper>
+    </Box>
+  );
+}
+
+// Routes are separated without a new routing package. Vite's SPA fallback
+// serves index.html for /ori in local development.
+export default function AFPDemoPage() {
+  return typeof window !== "undefined" &&
+    /^\/ori\/?$/.test(window.location.pathname) ? (
+    <AFPORIStandalonePage />
+  ) : (
+    <AFPInvestigationDemoPage />
   );
 }
