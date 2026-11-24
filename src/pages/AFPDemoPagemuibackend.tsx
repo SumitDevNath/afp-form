@@ -36,6 +36,7 @@ import {
   stableAFPJson,
   updateAFPInvestigation,
 } from "./afpApi";
+import { createORIRecord, getORIRecord, updateORIRecord } from "./oriApi";
 import type { SelectChangeEvent } from "@mui/material";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
@@ -7763,6 +7764,61 @@ export function AFPORIStandalonePage() {
   const [oriData, setOriData] = useState<AFPORIFormData>(
     createInitialAFPAdditionalInformation,
   );
+
+  // Local demo: record ID remains in memory until the page refreshes.
+  const oriIdRef = useRef<string | null>(null);
+  const lastSavedJsonRef = useRef<string | null>(null);
+
+  const [savedOriId, setSavedOriId] = useState<string | null>(null);
+
+  const [verification, setVerification] = useState<string | null>(null);
+
+  const [verifying, setVerifying] = useState(false);
+
+  const handleORISubmit = useCallback(async (payload: AFPORIFormData) => {
+    // First successful save -> POST.
+    // Subsequent saves -> PUT with the same record ID.
+    const record = oriIdRef.current
+      ? await updateORIRecord(oriIdRef.current, payload)
+      : await createORIRecord(payload);
+
+    oriIdRef.current = record.id;
+
+    lastSavedJsonRef.current = stableAFPJson(payload);
+
+    setSavedOriId(record.id);
+    setVerification(null);
+
+    return { id: record.id };
+  }, []);
+
+  const verifyORI = useCallback(async () => {
+    const id = oriIdRef.current;
+
+    if (!id || verifying) return;
+
+    setVerifying(true);
+    setVerification(null);
+
+    try {
+      const record = await getORIRecord<AFPORIFormData>(id);
+
+      setVerification(
+        stableAFPJson(record.data) === lastSavedJsonRef.current
+          ? "Verified: saved ORI data matches the last successful submission."
+          : "Mismatch: the stored ORI data differs from the last successful submission.",
+      );
+    } catch (error: unknown) {
+      setVerification(
+        error instanceof AFPApiError
+          ? error.message
+          : "Could not verify the ORI record.",
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }, [verifying]);
+
   return (
     <Box
       component="main"
@@ -7784,21 +7840,67 @@ export function AFPORIStandalonePage() {
           Outbreak response immunization (ORI)
         </Typography>
       </Box>
+
       <AFPORIFormProvider value={oriData} onChange={setOriData}>
         <AFPValidationProvider
           data={oriData}
           validate={validateAdditionalInformation}
           fullFormReady
+          onSubmit={handleORISubmit}
         >
           <div className="space-y-4" style={AFP_TYPOGRAPHY_VARIABLES}>
             <AdditionalInformationSection />
-            <AFPSubmitButton label="Validate ORI" />
+            <AFPSubmitButton label="Submit ORI" />
           </div>
         </AFPValidationProvider>
       </AFPORIFormProvider>
+
+      {savedOriId && (
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1.5,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: "0.8rem",
+              color: "text.secondary",
+              overflowWrap: "anywhere",
+            }}
+          >
+            Local ORI record ID: {savedOriId}
+          </Typography>
+
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={verifying}
+            onClick={() => {
+              void verifyORI();
+            }}
+          >
+            {verifying ? "Verifying..." : "Verify saved ORI (GET)"}
+          </Button>
+
+          {verification && (
+            <Typography role="status" sx={{ fontSize: "0.8rem" }}>
+              {verification}
+            </Typography>
+          )}
+        </Box>
+      )}
+
       <Paper
         variant="outlined"
-        sx={{ mt: 4, borderRadius: "12px", overflow: "hidden" }}
+        sx={{
+          mt: 4,
+          borderRadius: "12px",
+          overflow: "hidden",
+        }}
       >
         <Box
           sx={{
@@ -7818,6 +7920,7 @@ export function AFPORIStandalonePage() {
           >
             ORI Development State
           </Typography>
+
           <Typography
             sx={{
               mt: 0.25,
@@ -7825,9 +7928,11 @@ export function AFPORIStandalonePage() {
               fontSize: AFP_FONT_SIZE.developmentPanelDescription,
             }}
           >
-            Local ORI state only. No backend request is made on this page.
+            Current ORI JSON preview. Submit sends these six fields to the
+            independent local ORI API.
           </Typography>
         </Box>
+
         <Box
           component="pre"
           sx={{

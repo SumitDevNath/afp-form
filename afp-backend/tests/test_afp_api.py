@@ -103,14 +103,15 @@ async def test_post_get_and_db_persistence(client, saved_ids):
     #     "travelHistory",
     # ]
 
-    # assert set(body["data"]) == {
-    #     "clinicalInformation",
-    #     "screeningDiagnosis",
-    #     "signsSymptoms",
-    #     "clinicalExamination",
-    #     "previousHealthcareContacts",
-    #     "additionalInformation",
-    # }
+    assert set(body["data"]) == {
+    "clinicalInformation",
+    "screeningDiagnosis",
+    "signsSymptoms",
+    "vaccinationHistory",
+    "travelHistory",
+    "clinicalExamination",
+    "previousHealthcareContacts",
+}
     assert body["persistenceScope"] == "local_full_form"
     assert body["notPersistedSections"] == []
     assert body["data"] == payload

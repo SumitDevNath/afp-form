@@ -6,8 +6,7 @@ from datetime import timedelta
 
 import pytest
 
-from app.schemas.validation import validate_afp_form
-
+from app.schemas.validation import validate_afp_form, validate_ori_form
 
 def check(payload: dict, today, **kwargs):
     return validate_afp_form(payload, today=today, **kwargs)
@@ -43,14 +42,25 @@ def test_unanswered_screening_is_pending_without_hidden_errors(payload, today):
     }
 
 
-@pytest.mark.parametrize("days,status", [
-    (0, "eligible"), (59, "eligible"), (60, "not_eligible"), (61, "not_eligible"),
-])
+@pytest.mark.parametrize(
+    "days,status",
+    [
+        (0, "eligible"),
+        (59, "eligible"),
+        (60, "eligible"),
+        (90, "eligible"),
+        (91, "eligible"),
+        (180, "eligible"),
+        (181, "not_eligible"),
+    ],
+)
 def test_onset_boundary(payload, today, days, status):
     payload["clinicalInformation"]["paralysisOnsetDate"] = (
         today - timedelta(days=days)
     ).strftime("%d-%m-%Y")
+
     result = check(payload, today)
+
     assert result.screening_status == status
     assert result.is_valid
 
@@ -99,23 +109,30 @@ def test_other_site_and_duplicate_site(payload, today):
     assert "signsSymptoms.siteOfParalysis" in check(payload, today).errors
 
 
-def test_health_facility_conditional(payload, today):
+def test_health_facility_optional_fields(payload, today):
     signs = payload["signsSymptoms"]
-    signs["childAtHealthFacility"] = "yes"
-    signs["healthFacility"]["selectedFacilityOption"] = "__other__"
-    errors = check(payload, today).errors
-    assert {
-        "signsSymptoms.healthFacility.otherFacilityName",
-        "signsSymptoms.healthFacility.notificationDate",
-        "signsSymptoms.healthFacility.medicalRecordNumber",
-    }.issubset(errors)
 
-    signs["healthFacility"].update({
-        "otherFacilityName": "Development hospital",
-        "notificationDate": today.strftime("%d-%m-%Y"),
-        "medicalRecordNumber": "MR-123",
-    })
+    signs["childAtHealthFacility"] = "yes"
+
     assert check(payload, today).is_valid
+
+    signs["healthFacility"]["selectedFacilityOption"] = "__other__"
+
+    assert (
+        "signsSymptoms.healthFacility.otherFacilityName"
+        in check(payload, today).errors
+    )
+
+    signs["healthFacility"]["otherFacilityName"] = "Development hospital"
+
+    assert check(payload, today).is_valid
+
+    signs["healthFacility"]["notificationDate"] = "31-02-2026"
+
+    assert (
+        "signsSymptoms.healthFacility.notificationDate"
+        in check(payload, today).errors
+    )
 
 
 def test_vaccination_conditional_and_zero_doses(payload, today):
@@ -188,40 +205,122 @@ def test_repeated_contacts_duplicate_id_and_order(payload, today):
     )
 
 
-def test_first_contact_other_and_diagnosis_flag(payload, today):
+def test_optional_category_and_mandatory_diagnosis(payload, today):
     history = payload["previousHealthcareContacts"]
+
     history["firstContactCategory"] = "Other"
-    assert "previousHealthcareContacts.firstContactCategoryOther" in check(payload, today).errors
-    history["firstContactCategoryOther"] = "Community provider"
+    history["firstContactCategoryOther"] = ""
+
     assert check(payload, today).is_valid
-    assert "previousHealthcareContacts.suspectedDiagnosis" in check(
-        payload, today, require_suspected_diagnosis=True
-    ).errors
+
+    history["contacts"] = []
+
+    assert check(payload, today).is_valid
+
+    history["suspectedDiagnosis"] = ""
+
+    assert (
+        "previousHealthcareContacts.suspectedDiagnosis"
+        in check(payload, today).errors
+    )
+
+    history["suspectedDiagnosis"] = "Other"
+
+    assert (
+        "previousHealthcareContacts.suspectedDiagnosisOther"
+        in check(payload, today).errors
+    )
+
+    history["suspectedDiagnosis"] = "Rare disease"
+
+    assert check(payload, today).is_valid
 
 
-def test_additional_conditional_and_zero_counts(payload, today):
-    info = payload["additionalInformation"]
-    info["searchForAdditionalCases"] = "yes"
-    info["additionalCasesIdentified"] = "yes"
-    info["outbreakResponseImmunizationDone"] = "yes"
-    errors = check(payload, today).errors
-    assert "additionalInformation.numberOfAdditionalCases" in errors
-    assert "additionalInformation.numberOfChildrenVaccinated" in errors
+
+def test_additional_conditional_and_zero_counts():
+    # ORI is now independent of the AFP investigation payload.
+    info = {
+        "searchForAdditionalCases": "yes",
+        "additionalCasesIdentified": "yes",
+        "numberOfAdditionalCases": None,
+        "outbreakResponseImmunizationDone": "yes",
+        "numberOfChildrenVaccinated": None,
+        "outbreakResponseExplanation": "",
+    }
+
+    # Both dependent counts are required.
+    result = validate_ori_form(info)
+
+    assert (
+        "additionalInformation.numberOfAdditionalCases"
+        in result.errors
+    )
+
+    assert (
+        "additionalInformation.numberOfChildrenVaccinated"
+        in result.errors
+    )
+
+    # Zero is a valid count.
     info["numberOfAdditionalCases"] = 0
     info["numberOfChildrenVaccinated"] = 0
-    assert check(payload, today).is_valid
 
+    assert validate_ori_form(info).is_valid
+
+    # When ORI is not done, an explanation is required.
     info["outbreakResponseImmunizationDone"] = "no"
-    assert "additionalInformation.outbreakResponseExplanation" in check(payload, today).errors
-    info["outbreakResponseExplanation"] = "Not applicable"
-    assert check(payload, today).is_valid
+    info["numberOfChildrenVaccinated"] = None
+
+    result = validate_ori_form(info)
+
+    assert (
+        "additionalInformation.outbreakResponseExplanation"
+        in result.errors
+    )
+
+    info["outbreakResponseExplanation"] = "ORI was not conducted."
+
+    assert validate_ori_form(info).is_valid
 
 
-def test_negative_counts_and_boolean_count_are_invalid(payload, today):
-    payload["additionalInformation"]["numberOfChildrenVaccinated"] = -1
-    assert "additionalInformation.numberOfChildrenVaccinated" in check(payload, today).errors
-    payload["additionalInformation"]["numberOfChildrenVaccinated"] = False
-    assert "additionalInformation.numberOfChildrenVaccinated" in check(payload, today).errors
+
+
+def test_negative_counts_and_boolean_count_are_invalid():
+    # Independent ORI JSON, not part of AFP investigation.
+    info = {
+        "searchForAdditionalCases": "yes",
+        "additionalCasesIdentified": "yes",
+        "numberOfAdditionalCases": 0,
+        "outbreakResponseImmunizationDone": "yes",
+        "numberOfChildrenVaccinated": 0,
+        "outbreakResponseExplanation": "",
+    }
+
+    # A negative vaccination count is invalid.
+    info["numberOfChildrenVaccinated"] = -1
+
+    result = validate_ori_form(info)
+
+    assert (
+        "additionalInformation.numberOfChildrenVaccinated"
+        in result.errors
+    )
+
+    # Boolean False must not be interpreted as numeric 0.
+    info["numberOfChildrenVaccinated"] = False
+
+    result = validate_ori_form(info)
+
+    assert (
+        "additionalInformation.numberOfChildrenVaccinated"
+        in result.errors
+    )
+
+    # The valid zero value must still be accepted.
+    info["numberOfChildrenVaccinated"] = 0
+
+    assert validate_ori_form(info).is_valid
+
 
 
 def test_malformed_contacts_container_has_safe_error(payload, today):

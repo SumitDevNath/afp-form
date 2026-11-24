@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 from pydantic import ValidationError
 from pydantic.alias_generators import to_camel
 
-from app.schemas.afp import AFPFormData
+from app.schemas.afp import AFPFormData, ORIFormData
 
 
 ScreeningStatus = Literal["pending", "eligible", "not_eligible"]
@@ -102,7 +102,25 @@ def get_screening_status(data: AFPFormData, today: date) -> ScreeningStatus:
     if onset is None or onset > today:
         return "pending"
 
-    return "eligible" if (today - onset).days < 60 else "not_eligible"
+    return "eligible" if (today - onset).days <= 180 else "not_eligible"
+
+
+def get_onset_guidance(onset: date | None, today: date) -> Literal[
+    "no_investigation", "investigate_without_stool"
+] | None:
+    """Return the two calendar-day warnings in the latest AFP frontend.
+
+    Onset 91–180 days: investigate without stool/contact samples.
+    Onset >180 days: no AFP investigation in the local form workflow.
+    """
+    if onset is None or onset > today:
+        return None
+    elapsed = (today - onset).days
+    if elapsed > 180:
+        return "no_investigation"
+    if elapsed > 90:
+        return "investigate_without_stool"
+    return None
 
 
 def _required(errors: FieldErrors, path: str, value: object, message: str) -> None:
@@ -128,7 +146,6 @@ def _complete_rules(
     data: AFPFormData,
     today: date,
     status: ScreeningStatus,
-    require_suspected_diagnosis: bool,
 ) -> FieldErrors:
     errors: FieldErrors = {}
     clinical = data.clinical_information
@@ -183,15 +200,14 @@ def _complete_rules(
     if signs.child_at_health_facility == "yes":
         facility = signs.health_facility
         prefix = "signsSymptoms.healthFacility"
-        _required(errors, f"{prefix}.selectedFacilityOption",
-                  facility.selected_facility_option, "Health facility is not filled in.")
+        # Facility selection, notification date and hospital record are optional.
+        # Another NDSS service will eventually supply facility/date information.
         if facility.selected_facility_option == "__other__":
             _required(errors, f"{prefix}.otherFacilityName",
                       facility.other_facility_name, "Facility name is not filled in.")
+        # Supplied dates are still validated even though blank dates are permitted.
         _date(errors, f"{prefix}.notificationDate",
-              facility.notification_date, today, required=True)
-        _required(errors, f"{prefix}.medicalRecordNumber",
-                  facility.medical_record_number, "Medical record # is not filled in.")
+              facility.notification_date, today, required=False)
 
     vaccination = data.vaccination_history
     if vaccination.available:
@@ -231,22 +247,14 @@ def _complete_rules(
 
     reflexes = data.clinical_examination.reflexes
     for name in (
-        "right_biceps",
-        "left_biceps",
-        "right_triceps",
-        "left_triceps",
-        "right_brachioradialis",
-        "left_brachioradialis",
-        "right_patellar",
-        "left_patellar",
-        "right_achilles",
-        "left_achilles",
+        "right_biceps", "left_biceps",
+        "right_triceps", "left_triceps",
+        "right_brachioradialis", "left_brachioradialis",
+        "right_patellar", "left_patellar", "right_achilles", "left_achilles",
     ):
         _required(
-            errors,
-            f"clinicalExamination.reflexes.scores.{_camel(name)}",
-            getattr(reflexes.scores, name),
-            "Select reflex score.",
+            errors, f"clinicalExamination.reflexes.scores.{_camel(name)}",
+            getattr(reflexes.scores, name), "Select reflex score.",
         )
     for name in ("right_plantar_reflex", "left_plantar_reflex"):
         _required(errors, f"clinicalExamination.reflexes.{_camel(name)}",
@@ -266,65 +274,25 @@ def _complete_rules(
                 )
 
     history = data.previous_healthcare_contacts
-    if not history.contacts:
-        errors["previousHealthcareContacts.contacts"] = "Add at least one contact."
-
     seen: set[str] = set()
     for contact in history.contacts:
         prefix = f"previousHealthcareContacts.contacts.{contact.id}"
         if contact.id in seen:
             errors[f"{prefix}.providerName"] = "Contact ID is duplicated."
         seen.add(contact.id)
-        for field_name, label in (
-            ("provider_name", "Provider name"),
-            ("address", "Address"),
-            ("action_taken_planned", "Action taken / planned"),
-        ):
-            _required(
-                errors, f"{prefix}.{_camel(field_name)}",
-                getattr(contact, field_name), f"{label} is not filled in.",
-            )
+        # All six medical contact details are optional. Dates supplied must
+        # be valid and not in the future.
         _date(errors, f"{prefix}.dateCaseVisited",
-              contact.date_case_visited, today, required=True)
-        _required(errors, f"{prefix}.alreadyInNetwork",
-                  contact.already_in_network, "Select an answer.")
-        _required(errors, f"{prefix}.reportedCase",
-                  contact.reported_case, "Select Yes or No.")
+              contact.date_case_visited, today, required=False)
 
-    _required(
-        errors, "previousHealthcareContacts.firstContactCategory",
-        history.first_contact_category, "Category of the first contact is not filled in.",
-    )
-    if history.first_contact_category == "Other":
-        _required(errors, "previousHealthcareContacts.firstContactCategoryOther",
-                  history.first_contact_category_other,
-                  "Other contact category is not filled in.")
-    if require_suspected_diagnosis:
-        _required(errors, "previousHealthcareContacts.suspectedDiagnosis",
-                  history.suspected_diagnosis, "Suspected diagnosis is not filled in.")
-
-    additional = data.additional_information
-    _required(errors, "additionalInformation.searchForAdditionalCases",
-              additional.search_for_additional_cases,
-              "Search for additional AFP cases is not filled in.")
-    if (
-        additional.search_for_additional_cases == "yes"
-        and additional.additional_cases_identified == "yes"
-    ):
-        _required(errors, "additionalInformation.numberOfAdditionalCases",
-                  additional.number_of_additional_cases,
-                  "Number of additional AFP cases is not filled in.")
-    _required(errors, "additionalInformation.outbreakResponseImmunizationDone",
-              additional.outbreak_response_immunization_done,
-              "Outbreak response immunization is not filled in.")
-    if additional.outbreak_response_immunization_done == "yes":
-        _required(errors, "additionalInformation.numberOfChildrenVaccinated",
-                  additional.number_of_children_vaccinated,
-                  "Number of children vaccinated is not filled in.")
-    elif additional.outbreak_response_immunization_done == "no":
-        _required(errors, "additionalInformation.outbreakResponseExplanation",
-                  additional.outbreak_response_explanation,
-                  "Explanation is not filled in.")
+    # Category, category-other and comments are optional.
+    # The frontend stores a free-text Other disease directly in suspectedDiagnosis.
+    _required(errors, "previousHealthcareContacts.suspectedDiagnosis",
+              history.suspected_diagnosis, "Suspected diagnosis is not filled in.")
+    if history.suspected_diagnosis == "Other":
+        errors["previousHealthcareContacts.suspectedDiagnosisOther"] = (
+            "Enter the other suspected disease."
+        )
 
     return errors
 
@@ -337,12 +305,12 @@ def validate_afp_form(
     payload: Any,
     *,
     today: date | None = None,
-    require_suspected_diagnosis: bool = False,
+    require_suspected_diagnosis: bool | None = None,
 ) -> AFPValidationResult:
-    """Validate the complete frontend JSON envelope without persistence.
+    """Validate the seven-section AFP JSON without persistence.
 
-    The explicit flag is true only when approved diagnosis options are supplied.
-    Passing validation is not permission to persist shared-service data.
+    The obsolete optional flag is accepted only for earlier callers; diagnosis
+    is now mandatory whenever the screening is eligible.
     """
     if today is None:
         # Provisional local business timezone; confirm NDSS convention later.
@@ -358,5 +326,45 @@ def validate_afp_form(
         )
 
     status = get_screening_status(data, today)
-    errors = _complete_rules(data, today, status, require_suspected_diagnosis)
+    errors = _complete_rules(data, today, status)
     return AFPValidationResult(data=data, screening_status=status, errors=errors)
+
+
+@dataclass(frozen=True)
+class ORIValidationResult:
+    data: ORIFormData | None
+    errors: FieldErrors
+
+    @property
+    def is_valid(self) -> bool:
+        return self.data is not None and not self.errors
+
+
+def validate_ori_form(payload: Any) -> ORIValidationResult:
+    """Validate the independent /ori JSON; paths match frontend ORI fields."""
+    try:
+        data = ORIFormData.model_validate(payload)
+    except ValidationError as exc:
+        errors = _structural_errors(exc, payload)
+        return ORIValidationResult(
+            data=None,
+            errors={f"additionalInformation.{key}": value for key, value in errors.items()},
+        )
+
+    errors: FieldErrors = {}
+    prefix = "additionalInformation"
+    _required(errors, f"{prefix}.searchForAdditionalCases",
+              data.search_for_additional_cases, "Select an answer.")
+    if (data.search_for_additional_cases == "yes"
+            and data.additional_cases_identified == "yes"):
+        _required(errors, f"{prefix}.numberOfAdditionalCases",
+                  data.number_of_additional_cases, "Enter a count.")
+    _required(errors, f"{prefix}.outbreakResponseImmunizationDone",
+              data.outbreak_response_immunization_done, "Select an answer.")
+    if data.outbreak_response_immunization_done == "yes":
+        _required(errors, f"{prefix}.numberOfChildrenVaccinated",
+                  data.number_of_children_vaccinated, "Enter a count.")
+    elif data.outbreak_response_immunization_done == "no":
+        _required(errors, f"{prefix}.outbreakResponseExplanation",
+                  data.outbreak_response_explanation, "Enter an explanation.")
+    return ORIValidationResult(data=data, errors=errors)

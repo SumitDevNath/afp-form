@@ -1,13 +1,14 @@
 
-"""Frontend-shaped fixture; no database, patient data, or network required."""
+"""Frontend-shaped synthetic fixtures for AFP backend tests."""
 
 from copy import deepcopy
 from datetime import date, timedelta
 from uuid import uuid4
 
-import pytest
 import asyncio
 import sys
+
+import pytest
 
 
 def _display(day: date) -> str:
@@ -16,7 +17,12 @@ def _display(day: date) -> str:
 
 def make_payload(today: date) -> dict:
     onset = _display(today - timedelta(days=7))
-    pair = {"right": 0, "left": 5}
+
+    pair = {
+        "right": 0,
+        "left": 5,
+    }
+
     return {
         "clinicalInformation": {
             "paralysisPresent": "yes",
@@ -26,7 +32,9 @@ def make_payload(today: date) -> dict:
             "paralysisCausedByInjury": "no",
             "paralysisPresentAtBirth": "no",
         },
+
         "screeningDiagnosis": "",
+
         "signsSymptoms": {
             "feverWhenParalysisBegan": "unknown",
             "musclePainWhenParalysisBegan": "no",
@@ -36,6 +44,7 @@ def make_payload(today: date) -> dict:
             "paralysisMovedUpward": "no",
             "sensationPresentAtParalysisSite": "unknown",
             "childAtHealthFacility": "no",
+
             "healthFacility": {
                 "selectedFacilityOption": "",
                 "otherFacilityName": "",
@@ -43,71 +52,106 @@ def make_payload(today: date) -> dict:
                 "medicalRecordNumber": "",
             },
         },
+
         "vaccinationHistory": {
             "available": False,
-            "opvCampaignDoses": {"recordSource": None, "numberOfDoses": None},
-            "opvRoutineDoses": {"recordSource": None, "numberOfDoses": None},
+
+            "opvCampaignDoses": {
+                "recordSource": None,
+                "numberOfDoses": None,
+            },
+
+            "opvRoutineDoses": {
+                "recordSource": None,
+                "numberOfDoses": None,
+            },
+
             "lastOpvDoseBeforeParalysisDate": "",
-            "ipvDoses": {"recordSource": None, "numberOfDoses": None},
+
+            "ipvDoses": {
+                "recordSource": None,
+                "numberOfDoses": None,
+            },
+
             "lastIpvDoseBeforeParalysisDate": "",
             "opvGivenAfterParalysis": None,
             "opvAfterParalysisDate": "",
         },
+
         "travelHistory": {
             "travelOutsideAreaLast30Days": False,
             "notifiedToConcernedDsfpSimo": False,
             "notificationDate": "",
         },
+
         "clinicalExamination": {
             "reflexes": {
                 "scores": {
-                    "rightBiceps": "0", "leftBiceps": "1+",
-                    "rightTriceps": "2+", "leftTriceps": "3+",
-                    "rightBrachioradialis": "2+", "leftBrachioradialis": "3+",
-                    "rightPatellar": "4+", "leftPatellar": "0",
-                    "rightAchilles": "2+", "leftAchilles": "2+",
+                    "rightBiceps": "0",
+                    "leftBiceps": "1+",
+
+                    "rightTriceps": "2+",
+                    "leftTriceps": "3+",
+
+                    "rightBrachioradialis": "2+",
+                    "leftBrachioradialis": "3+",
+
+                    "rightPatellar": "4+",
+                    "leftPatellar": "0",
+
+                    "rightAchilles": "2+",
+                    "leftAchilles": "2+",
                 },
+
                 "rightPlantarReflex": "flexor",
                 "leftPlantarReflex": "equivocal",
             },
+
             "muscleStrength": {
                 "upperLimb": {
-                    name: deepcopy(pair) for name in (
-                        "flexWrist", "extendWrist", "flexElbow",
-                        "extendElbow", "flexShoulder", "extendShoulder",
+                    name: deepcopy(pair)
+                    for name in (
+                        "flexWrist",
+                        "extendWrist",
+                        "flexElbow",
+                        "extendElbow",
+                        "flexShoulder",
+                        "extendShoulder",
                         "handGrip",
                     )
                 },
+
                 "lowerLimb": {
-                    name: deepcopy(pair) for name in (
-                        "flexHip", "extendHip", "flexKnee",
-                        "extendKnee", "flexAnkle", "extendAnkle",
+                    name: deepcopy(pair)
+                    for name in (
+                        "flexHip",
+                        "extendHip",
+                        "flexKnee",
+                        "extendKnee",
+                        "flexAnkle",
+                        "extendAnkle",
                     )
                 },
             },
         },
+
         "previousHealthcareContacts": {
             "contacts": [{
                 "id": f"contact-{uuid4().hex}",
                 "providerName": "Test provider",
                 "address": "Test address",
-                "dateCaseVisited": _display(today - timedelta(days=2)),
+                "dateCaseVisited": _display(
+                    today - timedelta(days=2)
+                ),
                 "alreadyInNetwork": "unknown",
                 "reportedCase": "no",
                 "actionTakenPlanned": "Test plan",
             }],
+
             "firstContactCategory": "Regd doctor",
             "firstContactCategoryOther": "",
             "additionalComments": "",
-            "suspectedDiagnosis": "",
-        },
-        "additionalInformation": {
-            "searchForAdditionalCases": "pending",
-            "additionalCasesIdentified": None,
-            "numberOfAdditionalCases": None,
-            "outbreakResponseImmunizationDone": "pending",
-            "numberOfChildrenVaccinated": None,
-            "outbreakResponseExplanation": "",
+            "suspectedDiagnosis": "GBS",
         },
     }
 
@@ -122,10 +166,11 @@ def payload(today: date) -> dict:
     return make_payload(today)
 
 
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Use an appropriate event loop for Psycopg on Windows."""
 
-def pytest_asyncio_loop_factories(config, item):
-    """Use a Windows-compatible event loop for Psycopg 3 async tests."""
-    return {
-        "selector": asyncio.SelectorEventLoop,
-    }
+    if sys.platform == "win32":
+        return asyncio.WindowsSelectorEventLoopPolicy()
 
+    return asyncio.DefaultEventLoopPolicy()

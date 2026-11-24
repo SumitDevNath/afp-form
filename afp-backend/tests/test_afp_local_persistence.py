@@ -113,7 +113,7 @@ def full_payload(today: date) -> dict:
     return data
 
 
-async def test_all_eight_sections_roundtrip(saved_ids):
+async def test_all_seven_sections_roundtrip(saved_ids):
     today = date(2026, 11, 16)
     data = full_payload(today)
 

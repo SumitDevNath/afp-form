@@ -1,7 +1,8 @@
 
 """AFP FastAPI entry point.
 
-Investigation routes are local-development-only until NDSS integration.
+Investigation and ORI routes are local-development-only
+until NDSS integration is approved.
 """
 
 from collections.abc import AsyncGenerator
@@ -15,6 +16,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.api.dependencies import APIProblem
 from app.api.routes.afp import router as afp_router
+from app.api.routes.ori import router as ori_router
 from app.db.session import engine
 
 from app.services.afp import (
@@ -41,7 +43,7 @@ async def lifespan(
 app = FastAPI(
     title="AFP Investigation API",
     description=(
-        "Local-only AFP-owned development API; "
+        "Local-only AFP and ORI development API; "
         "not approved NDSS integration."
     ),
     version="0.1.0",
@@ -62,10 +64,10 @@ async def health_check() -> dict[str, str]:
 
 @app.exception_handler(RequestValidationError)
 async def invalid_request(
-    _request: Request,
+    request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
-    """Return safe, frontend-compatible request validation errors."""
+    """Return frontend-compatible validation errors."""
 
     if any(
         item.get("type") == "json_invalid"
@@ -76,9 +78,19 @@ async def invalid_request(
             content={"message": "Malformed JSON request."},
         )
 
+    errors = request_errors(exc)
+
+    if request.url.path.startswith("/api/v1/ori/records"):
+        # ORI UI uses historical additionalInformation field IDs,
+        # but the standalone ORI API receives an unwrapped object.
+        errors = {
+            f"additionalInformation.{field}": message
+            for field, message in errors.items()
+        }
+
     return JSONResponse(
         status_code=422,
-        content={"errors": request_errors(exc)},
+        content={"errors": errors},
     )
 
 
@@ -87,8 +99,6 @@ async def invalid_afp(
     _request: Request,
     exc: AFPValidationFailure,
 ) -> JSONResponse:
-    """Return AFP business-rule errors by frontend field ID."""
-
     return JSONResponse(
         status_code=422,
         content={"errors": exc.errors},
@@ -100,8 +110,6 @@ async def pending_integration(
     _request: Request,
     _exc: AFPIntegrationPending,
 ) -> JSONResponse:
-    """Do not claim unapproved shared-service persistence."""
-
     return JSONResponse(
         status_code=503,
         content={
@@ -140,7 +148,7 @@ async def database_conflict(
     _request: Request,
     _exc: IntegrityError,
 ) -> JSONResponse:
-    """Never expose constraint names, SQL or database values."""
+    """Never expose constraint names or database values."""
 
     return JSONResponse(
         status_code=409,
@@ -148,15 +156,48 @@ async def database_conflict(
     )
 
 
+
 @app.exception_handler(SQLAlchemyError)
 async def database_unavailable(
     _request: Request,
-    _exc: SQLAlchemyError,
+    exc: SQLAlchemyError,
 ) -> JSONResponse:
+    """Temporary local diagnostic; never expose database details to clients."""
+
+    original = getattr(exc, "orig", None)
+    diagnostic = getattr(original, "diag", None)
+
+    print("\n=== AFP LOCAL DATABASE ERROR ===")
+    print("SQLAlchemy exception:", type(exc).__name__)
+    print(
+        "PostgreSQL exception:",
+        type(original).__name__ if original else "N/A",
+    )
+    print(
+        "SQLSTATE:",
+        getattr(original, "sqlstate", None),
+    )
+    print(
+        "Table:",
+        getattr(diagnostic, "table_name", None),
+    )
+    print(
+        "Column:",
+        getattr(diagnostic, "column_name", None),
+    )
+    print(
+        "Constraint:",
+        getattr(diagnostic, "constraint_name", None),
+    )
+    print("================================\n")
+
     return JSONResponse(
         status_code=503,
-        content={"message": "Database operation unavailable."},
+        content={
+            "message": "Database operation unavailable."
+        },
     )
+
 
 
 @app.exception_handler(Exception)
@@ -164,7 +205,7 @@ async def internal_error(
     _request: Request,
     _exc: Exception,
 ) -> JSONResponse:
-    """Return no clinical values, SQL details, or traceback."""
+    """Do not expose clinical data, SQL details, or tracebacks."""
 
     return JSONResponse(
         status_code=500,
@@ -173,3 +214,4 @@ async def internal_error(
 
 
 app.include_router(afp_router)
+app.include_router(ori_router)

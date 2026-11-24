@@ -50,13 +50,6 @@ def _payload() -> dict:
 
 async def test_create_and_read_all_owned_sections(created_ids):
     data = _payload()
-    data["additionalInformation"].update({
-        "searchForAdditionalCases": "yes",
-        "additionalCasesIdentified": "yes",
-        "numberOfAdditionalCases": 0,
-        "outbreakResponseImmunizationDone": "yes",
-        "numberOfChildrenVaccinated": 0,
-    })
     async with AsyncSessionLocal() as session:
         created = await service.create_local_afp_investigation(
             session, data, local_dev_mode=True, today=TODAY
@@ -67,8 +60,14 @@ async def test_create_and_read_all_owned_sections(created_ids):
         assert created.contacts[0].client_id == data["previousHealthcareContacts"]["contacts"][0]["id"]
         assert created.examination.right_biceps == "0"
         assert created.examination.upper_flex_wrist_right == 0
-        assert created.number_of_additional_cases == 0
-        assert created.number_of_children_vaccinated == 0
+        assert (
+        "number_of_additional_cases"
+        not in AFPInvestigation.__table__.columns
+        )
+        assert (
+            "number_of_children_vaccinated"
+            not in AFPInvestigation.__table__.columns
+        )
         assert created.notified_to_concerned_dsfp_simo is None
         assert created.dsfp_simo_notification_date is None
 

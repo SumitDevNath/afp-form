@@ -203,7 +203,7 @@ async def update_local_full_afp(
             _parent_values(data, eligible),
         )
 
-        # Replace the whole JSONB value rather than mutating it in place.
+        # Replace whole JSONB value (SQLAlchemy detects assignment).
         record.frontend_payload = snapshot
         record.updated_at = datetime.now(timezone.utc)
 

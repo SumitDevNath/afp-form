@@ -32,7 +32,6 @@ YES_NO_FIELDS = (
     "paralysis_sudden_onset",
     "paralysis_caused_by_injury",
     "paralysis_present_at_birth",
-    "additional_cases_identified",
 )
 
 YES_NO_UNKNOWN_FIELDS = (
@@ -42,11 +41,6 @@ YES_NO_UNKNOWN_FIELDS = (
     "paralysis_moved_upward",
     "sensation_present_at_paralysis_site",
     "child_at_health_facility",
-)
-
-YES_NO_PENDING_FIELDS = (
-    "search_for_additional_cases",
-    "outbreak_response_immunization_done",
 )
 
 REFLEX_FIELDS = (
@@ -105,13 +99,6 @@ class AFPInvestigation(Base):
             )
             for field in YES_NO_UNKNOWN_FIELDS
         ),
-        *(
-            CheckConstraint(
-                f"{field} IN ('yes', 'no', 'pending')",
-                name=f"ck_afp_inv_{field}",
-            )
-            for field in YES_NO_PENDING_FIELDS
-        ),
         CheckConstraint(
             "first_contact_category IN ("
             "'Regd doctor','GoB facility','Village doctor',"
@@ -126,17 +113,14 @@ class AFPInvestigation(Base):
             name="ck_afp_inv_site_of_paralysis_values",
         ),
         CheckConstraint(
-            "number_of_additional_cases >= 0",
-            name="ck_afp_inv_additional_count",
-        ),
-        CheckConstraint(
-            "number_of_children_vaccinated >= 0",
-            name="ck_afp_inv_vaccinated_count",
-        ),
-        CheckConstraint(
             "frontend_payload IS NULL OR "
             "jsonb_typeof(frontend_payload) = 'object'",
             name="ck_afp_inv_frontend_payload_object",
+        ),
+        CheckConstraint(
+            "frontend_payload IS NULL OR "
+            "NOT (frontend_payload ? 'additionalInformation')",
+            name="ck_afp_inv_no_ori_section",
         ),
     )
 
@@ -216,22 +200,6 @@ class AFPInvestigation(Base):
     additional_comments: Mapped[str | None] = mapped_column(String(1000))
     suspected_diagnosis: Mapped[str | None] = mapped_column(Text)
 
-    # Additional Information
-    search_for_additional_cases: Mapped[str | None] = mapped_column(
-        String(7)
-    )
-    additional_cases_identified: Mapped[str | None] = mapped_column(
-        String(3)
-    )
-    number_of_additional_cases: Mapped[int | None] = mapped_column(Integer)
-    outbreak_response_immunization_done: Mapped[str | None] = mapped_column(
-        String(7)
-    )
-    number_of_children_vaccinated: Mapped[int | None] = mapped_column(Integer)
-    outbreak_response_explanation: Mapped[str | None] = mapped_column(
-        String(500)
-    )
-
     examination: Mapped[AFPClinicalExamination | None] = relationship(
         back_populates="investigation",
         cascade="all, delete-orphan",
@@ -281,11 +249,11 @@ class AFPClinicalExamination(Base):
         primary_key=True,
     )
 
-    # Eight bilateral reflex scores
+    # Ten bilateral reflex scores (five muscles on each side)
     right_biceps: Mapped[str | None] = mapped_column(String(2))
     left_biceps: Mapped[str | None] = mapped_column(String(2))
-    right_triceps: Mapped[str | None] = mapped_column(String(2),nullable=True,)
-    left_triceps: Mapped[str | None] = mapped_column(String(2), nullable=True,)
+    right_triceps: Mapped[str | None] = mapped_column(String(2))
+    left_triceps: Mapped[str | None] = mapped_column(String(2))
     right_brachioradialis: Mapped[str | None] = mapped_column(String(2))
     left_brachioradialis: Mapped[str | None] = mapped_column(String(2))
     right_patellar: Mapped[str | None] = mapped_column(String(2))
@@ -394,4 +362,25 @@ class AFPHealthcareContact(Base):
 
     investigation: Mapped[AFPInvestigation] = relationship(
         back_populates="contacts",
+    )
+
+
+class ORIRecord(Base):
+    """Independent ORI local record, never linked to an AFP investigation."""
+
+    __tablename__ = "ori_records"
+    __table_args__ = (
+        CheckConstraint("jsonb_typeof(payload) = 'object'", name="ck_ori_payload_object"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False,
+        server_default=func.now(), onupdate=func.now(),
     )

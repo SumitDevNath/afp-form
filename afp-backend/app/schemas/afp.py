@@ -90,23 +90,17 @@ class TravelHistory(FrontendModel):
     notification_date: FormDate
 
 
-
 class ReflexScores(FrontendModel):
     right_biceps: ReflexCode
     left_biceps: ReflexCode
-
     right_triceps: ReflexCode
     left_triceps: ReflexCode
-
     right_brachioradialis: ReflexCode
     left_brachioradialis: ReflexCode
-
     right_patellar: ReflexCode
     left_patellar: ReflexCode
-
     right_achilles: ReflexCode
     left_achilles: ReflexCode
-
 
 
 class ReflexExamination(FrontendModel):
@@ -164,10 +158,11 @@ class PreviousHealthcareContacts(FrontendModel):
     first_contact_category: ContactCategory
     first_contact_category_other: str = Field(max_length=150)
     additional_comments: str = Field(max_length=1000)
-    suspected_diagnosis: str
+    suspected_diagnosis: str = Field(max_length=250)
 
 
-class AdditionalInformation(FrontendModel):
+class ORIFormData(FrontendModel):
+    """Independent /ori frontend payload, not an AFP investigation section."""
     search_for_additional_cases: YesNoPending
     additional_cases_identified: YesNo
     number_of_additional_cases: NonNegativeCount
@@ -177,7 +172,7 @@ class AdditionalInformation(FrontendModel):
 
 
 class AFPFormData(FrontendModel):
-    """Full frontend envelope; some sections belong to shared NDSS services."""
+    """Seven-section AFP investigation payload; ORI is independent."""
 
     clinical_information: ClinicalInformation
     previous_healthcare_contacts: PreviousHealthcareContacts
@@ -186,4 +181,3 @@ class AFPFormData(FrontendModel):
     vaccination_history: VaccinationHistory
     travel_history: TravelHistory
     clinical_examination: ClinicalExamination
-    additional_information: AdditionalInformation
